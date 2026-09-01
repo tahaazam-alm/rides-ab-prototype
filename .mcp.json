@@ -1,0 +1,1 @@
+{"mcpServers":{"design-system":{"command":"node","args":["node_modules/design-system/mcp/server.js"]}}}

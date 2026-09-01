@@ -1,0 +1,24 @@
+/* Minimal app shell. All visual values come from design-system tokens
+   (loaded by 'design-system/dist/index.css'); nothing is hardcoded here. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  /* The document default, not just the screen shells: a component rendered on
+     its own — an isolated capture, an inspector, a future story — still has to
+     land on Open Sans rather than the browser's serif. */
+  font-family: var(--type-body-regular-family);
+  background: var(--background-base-subtle);
+  color: var(--text-base-default);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100dvh;
+}

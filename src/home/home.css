@@ -1,0 +1,372 @@
+/* Homepage — every value is a design-system token. The canvas is fluid so it
+   fills whatever device frame it is previewed in. */
+
+.home {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  /* Exactly one viewport tall, not content-driven, so the tab bar can pin to
+     the bottom edge while the content scrolls underneath it. */
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--background-base-subtle);
+  font-family: var(--type-body-regular-family);
+}
+
+.home__scroll {
+  position: relative;
+  flex: 1;
+  /* A column so the deals plate can take the remaining height when the content
+     is short of a full screen. */
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+/* The soft aqua wash behind the product shelf: a blurred disc bleeding off the
+   top of the screen, as in the Figma "blob" layer. */
+.home__blob {
+  position: absolute;
+  inset-block-start: -76px;
+  inset-inline-start: 50%;
+  translate: -50%;
+  width: 410px;
+  aspect-ratio: 1;
+  border-radius: var(--rounded-full);
+  background: var(--color-aqua-30);
+  filter: blur(50px);
+  pointer-events: none;
+}
+
+/* Inline DS line-icons carry width/height="24"; let the wrapper size them. */
+.home .ds-icon > svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ---------- Header ---------- */
+
+.home__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space);
+}
+
+/* ---------- Products ---------- */
+
+.home__products {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-xs);
+  margin-block-start: var(--space-xs);
+  padding-inline: var(--space);
+}
+
+.product-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  /* The tag overhangs the top edge, so the tile can't clip its own overflow. */
+  padding-block: var(--space-xs) var(--space-sm);
+  padding-inline: var(--space-2xs);
+  min-width: 0;
+  border: 0.5px solid var(--border-base-default);
+  border-radius: var(--rounded);
+  background: var(--background-base-default);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.product-tile:active {
+  background: var(--background-base-pressed);
+}
+
+.product-tile__icon {
+  width: 52px;
+  height: 52px;
+  flex: none;
+}
+
+.product-tile__label {
+  min-width: 100%;
+  font-family: var(--type-caption-semibold-family);
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-caption-semibold-weight);
+  line-height: var(--type-caption-lh);
+  color: var(--text-base-default);
+  text-align: center;
+}
+
+.product-tile__tag {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 50%;
+  translate: -50% -50%;
+}
+
+/* ---------- Services ---------- */
+
+.home__services {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  column-gap: 6px;
+  row-gap: var(--space);
+  margin-block-start: var(--space);
+  padding-inline: var(--space);
+}
+
+.service-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.service-tile__disc {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  padding: var(--space-xs);
+  border: 0.5px solid var(--border-base-default);
+  border-radius: var(--rounded-full);
+  background: var(--background-base-default);
+}
+
+.service-tile:active .service-tile__disc {
+  background: var(--background-base-pressed);
+}
+
+.service-tile__icon {
+  width: 32px;
+  height: 32px;
+  display: block;
+}
+
+.service-tile__label {
+  max-width: 100%;
+  font-family: var(--type-caption-regular-family);
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-caption-regular-weight);
+  line-height: var(--type-caption-lh);
+  color: var(--text-base-default);
+  text-align: center;
+  /* Long service names truncate rather than reflowing the shelf's row heights. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---------- Special deals and offers ---------- */
+
+.home__deals {
+  /* The white plate the deals sit on; it runs to the end of the scroll content
+     rather than stopping under the last card. */
+  flex: 1;
+  margin-block-start: var(--space-lg);
+  /* The bottom padding is the floating tab bar's clearance, carried by the
+     plate so the white runs behind the bar rather than stopping short of it. */
+  padding: var(--space) var(--space) 120px;
+  background: var(--background-base-default);
+}
+
+.home__section-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-block-end: var(--space);
+}
+
+.home__section-title h2 {
+  flex: 1;
+  margin: 0;
+  font-family: var(--type-subtitle-family);
+  font-size: var(--type-subtitle-size);
+  font-weight: var(--type-subtitle-weight);
+  line-height: var(--type-subtitle-lh);
+  color: var(--text-base-default);
+}
+
+.home__view-all {
+  flex: none;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: var(--type-body-semibold-family);
+  font-size: var(--type-body-size);
+  font-weight: var(--type-body-semibold-weight);
+  line-height: var(--type-body-lh);
+  color: var(--text-link-default);
+  cursor: pointer;
+}
+
+.home__view-all:active {
+  color: var(--text-link-pressed);
+}
+
+.home__deal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space);
+}
+
+.deal {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  /* Softer than --rounded-lg and short of the popover radius: the deal cards
+     carry their own 24px corner in the design. */
+  border-radius: 24px;
+  background: var(--background-base-default);
+}
+
+.deal__image {
+  display: block;
+  height: 150px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.deal__image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.deal__text {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space) var(--space-sm) var(--space-sm);
+  /* Above the reflection and its blur layer. */
+  isolation: isolate;
+}
+
+/* The image again, mirrored, so the frosted panel has the card's own colours
+   bleeding through it instead of flat white. */
+.deal__reflection {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  scale: 1 -1;
+  z-index: -2;
+  pointer-events: none;
+}
+
+.deal__text::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: color-mix(in srgb, var(--color-light) 60%, transparent);
+  backdrop-filter: blur(50px);
+  -webkit-backdrop-filter: blur(50px);
+  pointer-events: none;
+}
+
+.deal__title {
+  width: 100%;
+  margin: 0;
+  padding-inline: var(--space-sm);
+  font-family: var(--type-body-semibold-family);
+  font-size: var(--type-body-size);
+  font-weight: var(--type-body-semibold-weight);
+  line-height: var(--type-body-lh);
+  color: var(--text-base-default);
+  /* Always two lines tall, clamped at two: the cards in a row stay level
+     whether a title wraps or not. */
+  min-height: calc(var(--type-body-lh) * 2);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+.deal__coupon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  width: 100%;
+  padding: var(--space-xs) var(--space-sm);
+  border: none;
+  border-radius: var(--rounded-lg);
+  background: color-mix(in srgb, var(--color-light) 50%, transparent);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Reserves the pill's space on an offer that needs no code, and keeps it out of
+   the tab order and the accessibility tree. */
+.deal__coupon--empty {
+  visibility: hidden;
+}
+
+.deal__coupon-text {
+  font-family: var(--type-body-regular-family);
+  font-size: var(--type-body-size);
+  font-weight: var(--type-body-regular-weight);
+  line-height: var(--type-body-lh);
+  color: var(--text-base-default);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.deal__coupon-text b {
+  font-family: var(--type-body-semibold-family);
+  font-weight: var(--type-body-bold-weight);
+}
+
+.deal__copy {
+  color: var(--icon-secondary-default);
+}
+
+/* ---------- Tab bar ---------- */
+
+.home__tabbar {
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: 0;
+  pointer-events: none;
+}
+
+.home__tabbar > * {
+  pointer-events: auto;
+}
+
+/* Figma's "Scroll Edge Effect — Soft": content passing behind the bar blurs and
+   fades into the surface instead of meeting a hard bar edge. */
+.home__tabbar::before {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: 0;
+  height: 106px;
+  background: color-mix(in srgb, var(--background-base-default) 90%, transparent);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  mask-image: linear-gradient(to top, #000 55%, transparent);
+  pointer-events: none;
+}

@@ -1,0 +1,2679 @@
+/* Rides flow — every value is a design-system token. The canvas is fluid so it
+   fills whatever device frame it is previewed in. */
+
+.rides-screen {
+  position: relative;
+  width: 100%;
+  /* Exactly one viewport tall, not content-driven: BottomSheet is positioned
+     absolutely against this element, so a taller shell would push the sheet
+     (and its pinned keyboard) below the fold. The home screen scrolls inside. */
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--background-base-default);
+  font-family: var(--type-body-regular-family);
+  /* BottomSheet otherwise centres a 390px phone-width frame — let it span the
+     full canvas, and start at the top now that there is no status bar. */
+  --bottom-sheet-width: 100%;
+  --bottom-sheet-top-inset: 0px;
+}
+
+/* The DS Navbar always renders a mock iOS status bar (9:41 + dynamic island +
+   levels) and offers no prop to omit it. Hidden here so the canvas shows only
+   real app chrome and can sit inside any device preview. */
+.rides-screen .navbar__status {
+  display: none;
+}
+
+/* Inline DS line-icons carry width/height="24"; let the wrapper size them. */
+.ds-icon > svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ---------- Home ---------- */
+
+.rides-home {
+  /* The scroll container for the screen; `relative` so the absolutely
+     positioned hero scrolls with the content rather than pinning to the shell. */
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow-y: auto;
+  padding-bottom: var(--space-xl);
+}
+
+.rides-home__hero {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 0;
+  height: 428px;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.rides-home__hero-img {
+  width: 100%;
+  height: 348px;
+  object-fit: cover;
+  /* Fade the photo into the page, as the Figma background does. */
+  mask-image: linear-gradient(to bottom, #000 78%, transparent 90%);
+}
+
+
+
+
+/* The hero is a light studio photo with a white plate. In light mode it fades
+   into the white page, but in dark mode that plate would leave the headline and
+   "Book a ride now" white-on-white, so darken it into the page instead.
+   Declared for both dark signals: the explicit toggle and the system setting. */
+:root[data-theme='dark'] .rides-home__hero-img {
+  filter: brightness(0.36) saturate(1.15);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .rides-home__hero-img {
+    filter: brightness(0.36) saturate(1.15);
+  }
+}
+
+.rides-home__intro {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-lg) var(--space-lg) 0;
+}
+
+.rides-home__headline {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+}
+
+.rides-home__headline h1 {
+  margin: 0;
+  font-family: var(--type-headline-family);
+  font-size: var(--type-headline-size);
+  font-weight: var(--type-headline-weight);
+  line-height: var(--type-headline-lh);
+  letter-spacing: var(--type-headline-ls);
+  color: var(--text-base-default);
+}
+
+.rides-home__tagline {
+  margin: 0;
+  font-family: var(--type-body-regular-family);
+  font-size: var(--type-body-size);
+  line-height: var(--type-body-lh);
+  color: var(--text-base-default);
+}
+
+.rides-home__section {
+  position: relative;
+  margin: var(--space-3xl) 0 0;
+  padding-inline: var(--space-lg);
+  font-family: var(--type-title-family);
+  font-size: var(--type-title-size);
+  font-weight: var(--type-title-weight);
+  line-height: var(--type-title-lh);
+  letter-spacing: var(--type-title-ls);
+  color: var(--text-base-default);
+}
+
+.rides-home__form {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space);
+  padding: var(--space) var(--space) 0;
+}
+
+/* ---------- Field card ---------- */
+
+.rides-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid var(--border-base-default);
+  border-radius: var(--rounded);
+  background: var(--background-base-default);
+  transition: border-color var(--rides-ease-slow);
+}
+
+/* ---------- Step transition ---------- */
+
+/* Shared easing for the date <-> time step: a short ease-out, long enough to
+   read as one movement without delaying the tap. */
+.sheet--datetime {
+  --rides-ease: 240ms cubic-bezier(0.32, 0.72, 0, 1);
+  --rides-ease-slow: 280ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.collapse {
+  overflow: hidden;
+  transition: max-height var(--rides-ease, 240ms ease);
+}
+
+/* The picker itself fades and settles, so an opening card does not read as a
+   block of content appearing at full strength mid-slide. */
+.collapse > * {
+  opacity: 0;
+  transform: translateY(-4px);
+  transition:
+    opacity var(--rides-ease, 240ms ease),
+    transform var(--rides-ease, 240ms ease);
+}
+
+.collapse--open > * {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .collapse,
+  .collapse > *,
+  .rides-card,
+  .timezone-note {
+    transition: none;
+  }
+}
+
+/* Per the design, dividers are inset, not edge-to-edge: between field rows the
+   line starts at the label (card padding + 24px icon + gap = 56px), and above a
+   picker it starts at the card padding. Both run flush to the trailing edge.
+   Scoped two levels deep so it wins over the DS `.separator` regardless of
+   stylesheet order. */
+.rides-card .rides-card__rule {
+  /* width:auto so the start margin shrinks the rule instead of pushing it past
+     the card's trailing edge (the DS separator is width:100%). */
+  width: auto;
+  margin-inline-start: calc(var(--space) * 2 + 24px);
+}
+
+.rides-card .rides-card__rule--picker {
+  margin-inline-start: var(--space);
+}
+
+.rides-card--focused {
+  border-color: var(--border-base-focused);
+}
+
+/* Runs between the two 24px pin glyphs. WidgetField is a fixed 68px tall, so
+   the gap is measured from that rather than the frame's 56px rows. */
+.rides-card--route .rides-card__connector {
+  position: absolute;
+  inset-inline-start: 27px;
+  inset-block-start: 46px;
+  width: 0;
+  height: 45px;
+  border-inline-start: 1px dashed var(--border-base-default);
+}
+
+/* Passengers row — matches WidgetField's 68px height, 4px/16px padding and
+   16px gap so its icon and label line up with the fields above. */
+.passengers {
+  display: flex;
+  align-items: center;
+  gap: var(--space);
+  height: 68px;
+  padding: var(--space-xs) var(--space);
+}
+
+.passengers__icon {
+  color: var(--icon-base-subtle);
+}
+
+.passengers__label {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--type-body-regular-family);
+  font-size: var(--type-body-size);
+  line-height: var(--type-body-lh);
+  color: var(--text-base-default);
+}
+
+/* ---------- Upcoming bookings ---------- */
+
+.rides-home__upcoming {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space);
+  padding: var(--space-xl) 0 0 var(--space);
+}
+
+.rides-home__eyebrow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+/* The frame uses metal here, not the DS eyebrow default (subtext). */
+.rides-home__eyebrow .eyebrow {
+  color: var(--text-base-default);
+}
+
+.rides-home__dot {
+  display: inline-flex;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--rounded-full);
+  background: var(--background-success-subtle);
+}
+
+.rides-home__dot::after {
+  content: '';
+  width: 6px;
+  height: 6px;
+  margin: auto;
+  border-radius: var(--rounded-full);
+  background: var(--background-success-default);
+}
+
+.rides-home__cards {
+  display: flex;
+  gap: var(--space);
+  overflow-x: auto;
+  padding-inline-end: var(--space);
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+
+.rides-home__cards::-webkit-scrollbar {
+  display: none;
+}
+
+.upcoming-card {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: var(--space-sm);
+  /* Keeps the next card peeking at any canvas width. */
+  width: min(333px, 85%);
+  padding: var(--space-md);
+  border: 1px solid var(--border-base-default);
+  border-radius: var(--rounded);
+  background: var(--background-base-default);
+  scroll-snap-align: start;
+}
+
+.upcoming-card__row {
+  display: flex;
+  gap: var(--space-md);
+}
+
+.upcoming-card__logo,
+.upcoming-card__thumb {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: var(--rounded-full);
+  object-fit: cover;
+}
+
+.upcoming-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  min-width: 0;
+}
+
+.upcoming-card__route,
+.upcoming-card__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  margin: 0;
+  color: var(--text-base-default);
+}
+
+.upcoming-card__route {
+  font-family: var(--type-title-family);
+  font-size: var(--type-title-size);
+  font-weight: var(--type-title-bold-weight);
+  line-height: var(--type-title-lh);
+  letter-spacing: var(--type-title-ls);
+}
+
+.upcoming-card__title {
+  font-family: var(--type-subtitle-family);
+  font-size: var(--type-subtitle-size);
+  font-weight: var(--type-subtitle-bold-weight);
+  line-height: var(--type-subtitle-lh);
+}
+
+.upcoming-card__meta {
+  margin: 0;
+  font-family: var(--type-caption-regular-family);
+  font-size: var(--type-caption-size);
+  line-height: var(--type-caption-lh);
+  color: var(--text-base-default);
+}
+
+.upcoming-card__link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  align-self: flex-start;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: var(--type-body-semibold-family);
+  font-size: var(--type-body-size);
+  font-weight: var(--type-body-semibold-weight);
+  line-height: var(--type-body-lh);
+  color: var(--text-link-default);
+  cursor: pointer;
+}
+
+/* ---------- Sheets ---------- */
+
+.sheet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space);
+  padding: var(--space-sm) var(--space) var(--space);
+}
+
+.sheet__blurb {
+  margin: 0;
+  font-family: var(--type-body-regular-family);
+  font-size: var(--type-body-size);
+  line-height: var(--type-body-lh);
+  color: var(--text-base-default);
+}
+
+.sheet__results {
+  display: flex;
+  flex-direction: column;
+}
+
+.suggestion {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-md);
+  padding: var(--space-sm) 0;
+  border: none;
+  background: none;
+  text-align: start;
+  cursor: pointer;
+}
+
+.suggestion__pin {
+  color: var(--icon-base-default);
+  margin-block-start: var(--space-2xs);
+}
+
+.suggestion__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.suggestion__title {
+  font-family: var(--type-body-regular-family);
+  font-size: var(--type-body-size);
+  line-height: var(--type-body-lh);
+  color: var(--text-base-default);
+}
+
+/* Only the characters the user typed are highlighted, so the row reads as
+   ordinary text with the match called out. <mark> has a UA background, so both
+   the fill and the ink are set explicitly. */
+.highlight {
+  background: none;
+  color: var(--text-link-default);
+  font-family: var(--type-body-semibold-family);
+  font-weight: var(--type-body-semibold-weight);
+}
+
+.suggestion__subtitle {
+  font-family: var(--type-caption-regular-family);
+  font-size: var(--type-caption-size);
+  line-height: var(--type-caption-lh);
+  color: var(--text-base-subtext);
+}
+
+.suggestion__distance {
+  flex: none;
+  font-family: var(--type-caption-regular-family);
+  font-size: var(--type-caption-size);
+  line-height: var(--type-caption-lh);
+  color: var(--text-base-subtext);
+}
+
+.sheet__hint {
+  margin: 0;
+  padding: var(--space-md) 0;
+  font-family: var(--type-meta-regular-family);
+  font-size: var(--type-meta-size);
+  line-height: var(--type-meta-lh);
+  color: var(--text-base-subtext);
+  text-align: center;
+}
+
+.sheet__footnote {
+  margin: 0;
+  padding-block-start: var(--space-lg);
+  font-family: var(--type-caption-regular-family);
+  font-size: var(--type-caption-size);
+  line-height: var(--type-caption-lh);
+  color: var(--text-base-subtext);
+  text-align: center;
+}
+
+/* ---------- Calendar ---------- */
+
+.calendar {
+  padding: var(--space);
+}
+
+.calendar__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding-block-end: var(--space);
+}
+
+.calendar__month {
+  display: flex;
+  flex: 1;
+  gap: var(--space-xs);
+  margin: 0;
+  font-family: var(--type-subtitle-family);
+  font-size: var(--type-subtitle-size);
+  line-height: var(--type-subtitle-lh);
+}
+
+.calendar__month-name {
+  font-family: var(--type-subtitle-family);
+  font-weight: var(--type-subtitle-weight);
+  color: var(--text-base-default);
+}
+
+.calendar__year {
+  color: var(--text-base-subtext);
+}
+
+.calendar__nav {
+  display: inline-flex;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--icon-secondary-default);
+  cursor: pointer;
+}
+
+.calendar__table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.calendar__weekday {
+  padding-block-end: var(--space);
+  font-family: var(--type-caption-regular-family);
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-caption-regular-weight);
+  line-height: var(--type-caption-lh);
+  color: var(--text-base-default);
+  text-align: center;
+}
+
+.calendar__cell {
+  padding: 0;
+  text-align: center;
+}
+
+.calendar__day {
+  width: 100%;
+  padding-block: var(--space-md);
+  border: 1px solid transparent;
+  border-radius: var(--rounded-xs);
+  background: none;
+  font-family: var(--type-body-semibold-family);
+  font-size: var(--type-body-size);
+  font-weight: var(--type-body-semibold-weight);
+  line-height: var(--type-body-lh);
+  color: var(--text-base-default);
+  cursor: pointer;
+}
+
+.calendar__day--past {
+  font-weight: var(--type-body-regular-weight);
+  color: var(--text-base-subtext);
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.calendar__day--today {
+  border-color: var(--border-base-focused);
+}
+
+.calendar__day--selected {
+  background: var(--background-primary-default);
+  border-color: var(--background-primary-default);
+  color: var(--text-base-inverted-static);
+}
+
+/* ---------- Time wheel ---------- */
+
+.wheel {
+  position: relative;
+  display: flex;
+  height: 196px;
+  /* Capped and centred so the columns don't splay on a wide canvas. Centred with
+     align-self, not auto margins: an auto cross-axis margin on a column flex
+     item overrides `stretch` and collapses the wheel to its content width. */
+  width: 100%;
+  max-width: 360px;
+  align-self: center;
+  padding-inline: var(--space-lg);
+}
+
+.wheel__selection {
+  position: absolute;
+  inset-inline: var(--space);
+  inset-block-start: 50%;
+  height: 28px;
+  transform: translateY(-50%);
+  border-radius: var(--rounded-sm);
+  background: var(--background-base-subtle);
+  pointer-events: none;
+}
+
+.wheel__column {
+  /* Positioned so the columns paint above the absolute selection band, which
+     would otherwise cover the selected value. */
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+  text-align: center;
+  /* Hide the native focus ring; the selection band shows the value. */
+  outline: none;
+}
+
+.wheel__column::-webkit-scrollbar {
+  display: none;
+}
+
+.wheel__pad {
+  height: 84px;
+}
+
+.wheel__item {
+  display: block;
+  width: 100%;
+  height: 28px;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: var(--font-latin);
+  font-size: var(--type-subtitle-size);
+  line-height: 28px;
+  color: var(--text-base-subtext);
+  scroll-snap-align: center;
+  cursor: pointer;
+}
+
+.wheel__item--active {
+  font-weight: var(--type-subtitle-bold-weight);
+  color: var(--text-base-default);
+}
+
+/* ---------- Timezone note + confirm ---------- */
+
+.timezone-note {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: var(--rounded);
+  /* Transparent until the wheel opens, so the butter tint fades in with it. */
+  background: none;
+  transition: background-color var(--rides-ease-slow);
+}
+
+.timezone-note--open {
+  background: var(--background-caution-subtle);
+}
+
+.timezone-note__text {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  margin: 0;
+  padding: var(--space-sm) var(--space-md);
+  font-family: var(--type-caption-regular-family);
+  font-size: var(--type-caption-size);
+  line-height: var(--type-caption-lh);
+  color: var(--text-base-subtext);
+}
+
+.timezone-note__icon {
+  color: var(--icon-caution-default);
+}
+
+/* Like the keyboard, the confirm bar is pinned: the frame carries it in a
+   bottom bar, and on a short device it would otherwise fall below the fold. */
+.sheet--datetime {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.sheet--datetime .sheet__scroll {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space);
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.sheet__cta {
+  flex: none;
+  padding-block-start: var(--space-sm);
+}
+
+/* Two-line CTA: the DS Button has no subtitle slot, so this is composed here. */
+.confirm {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  width: 100%;
+  padding: var(--space-sm) var(--space);
+  border: none;
+  border-radius: var(--rounded-full);
+  background: var(--background-primary-default);
+  color: var(--text-base-inverted-static);
+  cursor: pointer;
+}
+
+.confirm:hover {
+  background: var(--background-primary-hover);
+}
+
+.confirm:active {
+  background: var(--background-primary-pressed);
+}
+
+.confirm__label {
+  font-family: var(--type-subtitle-family);
+  font-size: var(--type-subtitle-size);
+  font-weight: var(--type-subtitle-weight);
+  line-height: var(--type-subtitle-lh);
+}
+
+.confirm__meta {
+  font-family: var(--type-caption-regular-family);
+  font-size: var(--type-caption-size);
+  line-height: var(--type-caption-lh);
+}
+
+/* ---------- Editable route fields ---------- */
+
+/* Mirrors WidgetField's geometry (68px, 4px/16px padding, 16px gap) so these
+   rows line up with the picker rows on the home screen. */
+.route-field {
+  display: flex;
+  align-items: center;
+  gap: var(--space);
+  height: 68px;
+  padding: var(--space-xs) var(--space);
+  background: var(--background-base-default);
+  cursor: text;
+}
+
+.route-field__icon {
+  color: var(--icon-base-subtle);
+}
+
+.route-field--active .route-field__icon {
+  color: var(--icon-secondary-default);
+}
+
+.route-field__content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.route-field__label {
+  font-family: var(--type-caption-regular-family);
+  font-size: var(--type-caption-size);
+  line-height: var(--type-caption-lh);
+  color: var(--text-base-subtext);
+  cursor: text;
+}
+
+.route-field--active .route-field__label {
+  color: var(--text-link-default);
+}
+
+.route-field__input {
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: var(--type-body-regular-family);
+  font-size: var(--type-body-size);
+  line-height: var(--type-body-lh);
+  color: var(--text-base-default);
+  /* The frame draws the caret in aqua. */
+  caret-color: var(--text-link-default);
+  outline: none;
+  text-overflow: ellipsis;
+}
+
+/* While the cell is empty the label stands in as the placeholder, so it stays
+   subtle even when focused — it only takes the aqua tint once it has risen to
+   the caption line above a value. */
+.route-field__input::placeholder {
+  color: var(--text-base-subtext);
+  opacity: 1;
+}
+
+.route-field__clear {
+  display: inline-flex;
+  flex: none;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--icon-base-subtle);
+  cursor: pointer;
+}
+
+/* ---------- iOS keyboard ---------- */
+
+/* Native platform chrome, so these greys are iOS values rather than DS tokens. */
+.keyboard {
+  --key-bg: #fcfcfe;
+  --key-fn-bg: #adb3be;
+  --key-ink: #1a1a1a;
+  padding-block: 6px 4px;
+  background: #d1d5db;
+  user-select: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .keyboard {
+    --key-bg: #6b6b6f;
+    --key-fn-bg: #48484c;
+    --key-ink: #fff;
+    background: #2c2c2e;
+  }
+}
+
+:root[data-theme='dark'] .keyboard {
+  --key-bg: #6b6b6f;
+  --key-fn-bg: #48484c;
+  --key-ink: #fff;
+  background: #2c2c2e;
+}
+
+.keyboard__autocorrect {
+  display: flex;
+  align-items: center;
+  height: 40px;
+  padding-inline: 6px;
+}
+
+.keyboard__suggestion {
+  font-family: var(--type-body-regular-family);
+  flex: 1;
+  min-width: 0;
+  padding: 0 4px;
+  border: none;
+  background: none;
+  font-size: 15px;
+  color: var(--key-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.keyboard__suggestion + .keyboard__suggestion {
+  border-inline-start: 1px solid rgb(0 0 0 / 0.1);
+}
+
+.keyboard__keys {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 6px 3px 0;
+}
+
+.keyboard__row {
+  display: flex;
+  gap: 5px;
+  justify-content: center;
+}
+
+.keyboard__row--indent {
+  padding-inline: 5%;
+}
+
+.key {
+  flex: 1;
+  min-width: 0;
+  height: 42px;
+  padding: 0;
+  border: none;
+  border-radius: 5px;
+  background: var(--key-bg);
+  box-shadow: 0 1px 0 rgb(0 0 0 / 0.3);
+  font-family: var(--type-body-regular-family);
+  font-size: 21px;
+  color: var(--key-ink);
+  cursor: pointer;
+}
+
+.key:active {
+  background: var(--key-fn-bg);
+}
+
+.key--wide {
+  flex: 0 0 11%;
+  font-size: 17px;
+  background: var(--key-fn-bg);
+}
+
+.key--on {
+  background: var(--key-bg);
+}
+
+.key--fn {
+  flex: 0 0 22%;
+  font-size: 15px;
+  background: var(--key-fn-bg);
+}
+
+.key--space {
+  flex: 1;
+  font-size: 15px;
+}
+
+.key--return {
+  flex: 0 0 24%;
+  font-size: 15px;
+  /* iOS keyboard blue from the frame, not a DS token — platform chrome. */
+  background: #08f;
+  color: #fff;
+}
+
+.keyboard__tray {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 32px 4px;
+  color: var(--key-ink);
+}
+
+/* The route sheet fills the DS sheet's scroll area exactly and never overflows
+   it, so the keyboard stays pinned to the bottom like a native one and only the
+   results list scrolls between the widget and the keys. */
+.sheet--route {
+  height: 100%;
+  min-height: 0;
+  padding-bottom: 0;
+  overflow: hidden;
+}
+
+.sheet--route .sheet__results {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  /* Momentum scrolling under the sticky keyboard on iOS. */
+  -webkit-overflow-scrolling: touch;
+}
+
+.sheet--route .keyboard {
+  flex: none;
+  /* Full-bleed past the sheet's 16px gutters, as a device keyboard is. */
+  margin-inline: calc(var(--space) * -1);
+}
+
+/* ---------- Results ---------- */
+
+/* Covers the home screen rather than replacing it, so the filled-in fields stay
+   mounted underneath and the back button restores them instantly. */
+.rides-results {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  background: var(--background-base-default);
+  animation: rides-results-in 280ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@keyframes rides-results-in {
+  from {
+    transform: translateX(6%);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rides-results {
+    animation: none;
+  }
+}
+
+/* Navbar + filters ride together as one translucent edge that the list blurs
+   under, so the DS navbar's own (mask-faded) blur is suppressed and a single
+   surface is drawn across both. */
+.rides-results__header {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 1;
+  flex: none;
+  background: var(--overlay-navbar);
+  backdrop-filter: blur(20px) saturate(1.8);
+  -webkit-backdrop-filter: blur(20px) saturate(1.8);
+}
+
+.rides-results__header .navbar--ios.navbar--default::before {
+  display: none;
+}
+
+/* Continues the blur a little past the header so cards dissolve into it instead
+   of being cut off by a hard line. */
+.rides-results__header::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  inset-block-start: 100%;
+  height: var(--space-lg);
+  background: var(--overlay-navbar);
+  backdrop-filter: blur(20px) saturate(1.8);
+  -webkit-backdrop-filter: blur(20px) saturate(1.8);
+  mask-image: linear-gradient(#000, transparent);
+  pointer-events: none;
+}
+
+/* Place names are far longer than the airport codes the DS pill is written for,
+   so the route row is allowed to shrink and each name truncates inside it
+   instead of pushing the pill wider than the toolbar. */
+.rides-results__header .navbar__itin-route {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.rides-results__header .navbar__itin-code {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Figma puts the head-count glyph before the number; the DS pill emits it after. */
+.rides-results__header .navbar__itin-pax {
+  flex-direction: row-reverse;
+}
+
+.rides-results__chips {
+  display: flex;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.rides-results__chips::-webkit-scrollbar {
+  display: none;
+}
+
+.rides-results__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space);
+  padding: var(--space-sm) var(--space) var(--space-xl);
+}
+
+/* ---------- Car card ---------- */
+
+.car-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  /* No bottom padding: the vehicle cutout runs to the card's own edge. */
+  padding: var(--space) var(--space) 0;
+  overflow: hidden;
+  border: 1px solid var(--border-base-default);
+  border-radius: var(--rounded-lg);
+  background: var(--background-base-default);
+}
+
+/* The soft tilted wash the vehicle sits on. A blurred ellipse rather than the
+   exported SVG, so it stays on the subtle-surface token in dark mode. */
+.car-card::before {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  inset-inline-end: -65px;
+  inset-block-end: -76px;
+  width: 324px;
+  height: 147px;
+  border-radius: 50%;
+  background: var(--background-base-subtle);
+  filter: blur(24px);
+  transform: rotate(-15deg);
+  pointer-events: none;
+}
+
+.car-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.car-card__head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  /* Leaves room for the price, which is pulled out of flow to the same row. */
+  padding-inline-end: 96px;
+}
+
+.car-card__name {
+  margin: 0;
+  font-family: var(--type-title-family);
+  font-size: var(--type-title-size);
+  font-weight: var(--type-title-weight);
+  line-height: var(--type-title-lh);
+  letter-spacing: var(--type-title-ls);
+  color: var(--text-base-default);
+}
+
+.car-card__model {
+  margin: 0;
+  font-family: var(--type-caption-regular-family);
+  font-size: var(--type-caption-size);
+  line-height: var(--type-caption-lh);
+  color: var(--text-base-subtext);
+}
+
+/* Pinned to the card's top corner so the promo label and amount stay aligned to
+   the edge whether or not the name below them wraps. */
+.car-card__pricing {
+  position: absolute;
+  inset-block-start: var(--space);
+  inset-inline-end: var(--space);
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.car-card__promo {
+  margin: 0;
+  background: var(--highlight-benefit);
+  font-family: var(--type-caption-regular-family);
+  font-size: var(--type-caption-size);
+  line-height: var(--type-caption-lh);
+  /* The gradient never flips, so the ink on it must not either. */
+  color: var(--text-base-default-static);
+  white-space: nowrap;
+}
+
+.car-card__price {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2xs);
+  margin: 0;
+  white-space: nowrap;
+}
+
+.car-card__was {
+  font-family: var(--type-body-regular-family);
+  font-size: var(--type-body-size);
+  line-height: var(--type-body-lh);
+  color: var(--text-base-subtext);
+  text-decoration-skip-ink: none;
+}
+
+.car-card__amount {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  font-family: var(--font-latin);
+  font-size: var(--type-headline-size);
+  font-weight: var(--type-body-bold-weight);
+  line-height: var(--type-headline-lh);
+  color: var(--text-base-default);
+}
+
+.vehicle-features {
+  display: flex;
+  flex-direction: column;
+  /* 6px, as in the frame — between the 4px and 8px spacing tokens. */
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.vehicle-feature {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  font-family: var(--type-caption-regular-family);
+  font-size: var(--type-caption-size);
+  line-height: var(--type-caption-lh);
+  color: var(--text-base-default);
+}
+
+.vehicle-feature .ds-icon {
+  color: var(--icon-base-default);
+}
+
+.vehicle-feature--success,
+.vehicle-feature--success .ds-icon {
+  color: var(--text-success-default);
+}
+
+.car-card__footer {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+/* Covers the card so a tap anywhere selects it; the content stays real markup
+   (headings, list) which a <button> may not contain. */
+.car-card__select {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  padding: 0;
+  border: none;
+  border-radius: inherit;
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.car-card__select:focus-visible {
+  outline: 2px solid var(--border-secondary-default);
+  outline-offset: -2px;
+}
+
+/* The press feedback belongs to the card, not the invisible button above it. */
+.car-card:has(.car-card__select:active) {
+  background: var(--background-base-hover);
+}
+
+.vehicle-capacity {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: var(--rounded-full);
+  background: var(--background-base-active);
+}
+
+.vehicle-capacity__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-family: var(--type-body-semibold-family);
+  font-size: var(--type-body-size);
+  font-weight: var(--type-body-semibold-weight);
+  line-height: var(--type-body-lh);
+  color: var(--text-base-default);
+}
+
+.vehicle-capacity__item .ds-icon {
+  color: var(--icon-base-default);
+}
+
+.vehicle-capacity__rule {
+  flex: none;
+  width: 1px;
+  height: 12px;
+  background: var(--border-base-default);
+}
+
+/* Fixed height so every card ends at the same distance below its wheels,
+   regardless of how tall the cutout is. */
+.vehicle-img {
+  position: relative;
+  flex: none;
+  display: flex;
+  align-items: flex-end;
+  height: 80px;
+  padding-block-end: 11px;
+}
+
+.vehicle-img img {
+  display: block;
+  width: var(--car-width);
+  height: auto;
+  /* The cutouts face right; the design has them facing into the card. */
+  transform: scaleX(-1);
+}
+
+/* Contact shadow under the wheels. */
+.vehicle-img::before {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: 12px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--color-metal-static);
+  filter: blur(2px);
+  opacity: 0.5;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ---------- Review your booking ---------- */
+
+.rides-review {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  background: var(--background-base-default);
+  animation: rides-results-in 280ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rides-review {
+    animation: none;
+  }
+}
+
+/* The DS iOS navbar brings its own scroll-edge blur, so the header only has to
+   sit above the scrolling body. */
+.rides-review__header {
+  position: relative;
+  z-index: 1;
+  flex: none;
+}
+
+.rides-review__body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space);
+  overflow-y: auto;
+  padding: var(--space-sm) var(--space);
+  /* Clears the action bar, which floats over the scroll. */
+  padding-block-end: 112px;
+}
+
+/* A full-width bar with square top corners and a hairline, as the frame draws
+   it — not the design system's floating glass pill, which is content-sized and
+   fully rounded. Only the CTA comes from the design system. */
+.review-bar {
+  position: absolute;
+  inset-block-end: 0;
+  inset-inline: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space);
+  background: var(--overlay-navbar);
+  backdrop-filter: blur(20px) saturate(1.8);
+  -webkit-backdrop-filter: blur(20px) saturate(1.8);
+  box-shadow: inset 0 0.5px 0 var(--border-base-default);
+}
+
+.review-bar__content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.review-bar__price {
+  margin: 0;
+  font-family: var(--type-subtitle-family);
+  font-size: var(--type-subtitle-size);
+  font-weight: var(--type-subtitle-weight);
+  line-height: var(--type-subtitle-lh);
+  color: var(--text-base-default);
+  white-space: nowrap;
+}
+
+.review-bar__link {
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: var(--type-body-semibold-family);
+  font-size: var(--type-body-size);
+  font-weight: var(--type-body-semibold-weight);
+  line-height: var(--type-body-lh);
+  color: var(--text-link-default);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* Shared surface for the summary and the rewards list. */
+.review-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding: var(--space);
+  border: 1px solid var(--border-base-default);
+  border-radius: var(--rounded-lg);
+  background: var(--background-base-default);
+}
+
+/* The rewards list supplies its own row padding, so the card only draws the box. */
+.review-card--rows {
+  gap: 0;
+  padding: 0;
+  border-radius: var(--rounded);
+  overflow: hidden;
+}
+
+/* ---------- Review: trip summary ---------- */
+
+.review-trip__head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.review-trip__lead {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.review-trip__kicker {
+  margin: 0;
+  font-family: var(--type-body-regular-family);
+  font-size: var(--type-body-size);
+  line-height: var(--type-body-lh);
+  color: var(--text-base-default);
+}
+
+.review-trip__name {
+  margin: 0;
+  font-family: var(--type-title-family);
+  font-size: var(--type-title-size);
+  font-weight: var(--type-title-weight);
+  line-height: var(--type-title-lh);
+  letter-spacing: var(--type-title-ls);
+  color: var(--text-base-default);
+}
+
+.review-trip__model {
+  /* Pulled up against the name, which carries a 28px line box. */
+  margin: -2px 0 var(--space-sm);
+  font-family: var(--type-caption-regular-family);
+  font-size: var(--type-caption-size);
+  line-height: var(--type-caption-lh);
+  color: var(--text-base-subtext);
+}
+
+/* Narrower than the results card's cutout — it shares the row with the name. */
+.review-trip__head .vehicle-img {
+  height: 72px;
+  padding-block-end: 8px;
+}
+
+.review-trip__head .vehicle-img::before {
+  inset-block-end: 9px;
+}
+
+.review-trip__legs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.review-leg {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space);
+}
+
+.review-leg__icon {
+  color: var(--icon-base-subtle);
+}
+
+.review-leg__body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.review-leg__label,
+.review-leg__detail {
+  margin: 0;
+  font-family: var(--type-caption-regular-family);
+  font-size: var(--type-caption-size);
+  line-height: var(--type-caption-lh);
+}
+
+.review-leg__label {
+  color: var(--text-base-subtext);
+}
+
+.review-leg__detail {
+  color: var(--text-base-default);
+}
+
+.review-leg__place {
+  margin: 0;
+  overflow: hidden;
+  font-family: var(--type-body-semibold-family);
+  font-size: var(--type-body-size);
+  font-weight: var(--type-body-semibold-weight);
+  line-height: var(--type-body-lh);
+  color: var(--text-base-default);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* A text link, which the design system has no Button variant for. */
+.review-trip__more {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  align-self: flex-start;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: var(--type-body-semibold-family);
+  font-size: var(--type-body-size);
+  font-weight: var(--type-body-semibold-weight);
+  line-height: var(--type-body-lh);
+  color: var(--text-link-default);
+  cursor: pointer;
+}
+
+.review-trip__more:active {
+  color: var(--text-link-pressed);
+}
+
+/* ---------- Review: sections ---------- */
+
+.review-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space);
+}
+
+.review-section__heading h2 {
+  margin: 0;
+  font-family: var(--type-subtitle-family);
+  font-size: var(--type-subtitle-size);
+  font-weight: var(--type-subtitle-weight);
+  line-height: var(--type-subtitle-lh);
+  color: var(--text-base-default);
+}
+
+.review-section__heading p {
+  margin: 0;
+  font-family: var(--type-caption-regular-family);
+  font-size: var(--type-caption-size);
+  line-height: var(--type-caption-lh);
+  color: var(--text-base-subtext);
+}
+
+/* Three equal chips filling the row. The frame's title picker is taller than
+   the DS chip's default 32px, so the height is set here rather than the label
+   or padding being touched. */
+.review-titles {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.review-titles .chip {
+  flex: 1;
+  height: 40px;
+}
+
+.review-phone {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+/* The dial code only has to fit "+966"; the number takes the rest. */
+.review-phone > :first-child {
+  flex: none;
+  width: 114px;
+}
+
+.review-phone > :last-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.review-codes {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.review-codes button {
+  width: 100%;
+  padding: var(--space-sm) var(--space);
+  border: none;
+  background: none;
+  font-family: var(--type-body-regular-family);
+  font-size: var(--type-body-size);
+  line-height: var(--type-body-lh);
+  color: var(--text-base-default);
+  text-align: start;
+  cursor: pointer;
+}
+
+.review-codes button:hover {
+  background: var(--background-base-hover);
+}
+
+.review-optin {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+}
+
+.review-optin__label {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  font-family: var(--type-body-regular-family);
+  font-size: var(--type-body-size);
+  line-height: var(--type-body-lh);
+  color: var(--text-base-default);
+  cursor: pointer;
+}
+
+.review-optin__info,
+.reward__info {
+  flex: none;
+  display: flex;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--icon-base-subtle);
+  cursor: pointer;
+}
+
+/* ---------- Review: extras ---------- */
+
+.addon {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  border: 1px solid var(--border-base-default);
+  border-radius: var(--rounded);
+  background: var(--background-base-default);
+}
+
+.addon__art {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+
+.addon__body {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 0 var(--space-md);
+  min-width: 0;
+  cursor: pointer;
+}
+
+.addon__name,
+.addon__note {
+  grid-column: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.addon__name {
+  font-family: var(--type-body-semibold-family);
+  font-size: var(--type-body-size);
+  font-weight: var(--type-body-semibold-weight);
+  line-height: var(--type-body-lh);
+  color: var(--text-base-default);
+}
+
+.addon__optional {
+  font-family: var(--type-caption-regular-family);
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-caption-regular-weight);
+  color: var(--text-base-subtext);
+}
+
+.addon__note {
+  font-family: var(--type-caption-regular-family);
+  font-size: var(--type-caption-size);
+  line-height: var(--type-caption-lh);
+  color: var(--text-base-subtext);
+}
+
+.addon__check {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+
+/* The language row's select drops below the text, aligned past the artwork. */
+.addon--stacked {
+  grid-template-columns: 40px 1fr;
+  row-gap: var(--space-md);
+}
+
+.addon--stacked .pill-select {
+  grid-column: 2;
+}
+
+.pill-select {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-self: start;
+  height: 40px;
+  padding-inline: var(--space) var(--space-sm);
+  border: 1px solid var(--border-base-default);
+  border-radius: var(--rounded-full);
+  background: var(--background-base-default);
+  color: var(--icon-secondary-default);
+}
+
+.pill-select select {
+  appearance: none;
+  border: none;
+  background: none;
+  padding: 0;
+  padding-inline-end: var(--space-xs);
+  font-family: var(--type-body-regular-family);
+  font-size: var(--type-body-size);
+  line-height: var(--type-body-lh);
+  color: var(--text-base-subtext);
+  cursor: pointer;
+}
+
+.pill-select:focus-within {
+  border-color: var(--border-secondary-default);
+}
+
+/* ---------- Review: rewards ---------- */
+
+.reward {
+  display: flex;
+  align-items: center;
+  gap: var(--space);
+  padding: var(--space);
+}
+
+.reward__logo {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--rounded-xs);
+  object-fit: contain;
+}
+
+.reward__name {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-family: var(--type-body-regular-family);
+  font-size: var(--type-body-size);
+  line-height: var(--type-body-lh);
+  color: var(--text-base-default);
+}
+
+/* The row's value, so it keeps the default ink rather than the muted DS Tag. */
+.reward__points {
+  flex: none;
+  min-width: 24px;
+  padding: var(--space-2xs) var(--space-xs);
+  border-radius: var(--rounded-xs);
+  background: var(--background-base-active);
+  font-family: var(--type-caption-semibold-family);
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-caption-semibold-weight);
+  line-height: var(--type-caption-lh);
+  color: var(--text-base-default);
+  text-align: center;
+}
+
+/* The rate label straddles the card's top border, so the wrapper leaves room
+   for the half that sits above it. */
+.reward-featured {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.reward-featured__rate {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  position: relative;
+  z-index: 1;
+  margin: 0 var(--space-lg) -8px 0;
+  padding: var(--space-2xs) var(--space-xs);
+  border-radius: var(--rounded-xs);
+  background: var(--background-primary-subtle);
+  font-family: var(--type-caption-semibold-family);
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-caption-semibold-weight);
+  line-height: var(--type-caption-lh);
+  color: var(--text-link-default);
+  white-space: nowrap;
+}
+
+.reward-featured__card {
+  width: 100%;
+  border: 1px solid var(--border-base-default);
+  border-radius: var(--rounded);
+  /* The frame's wallet gradient: an aqua wash on the leading edge fading out
+     across the card. Kept on tokens so it reads on either surface. */
+  background:
+    linear-gradient(
+      to right,
+      color-mix(in srgb, var(--color-aqua-30) 60%, transparent),
+      transparent 80%
+    ),
+    var(--background-base-default);
+}
+
+/* The featured logo has no brand plate of its own in the frame. */
+.reward-featured__card .reward__logo {
+  width: 24px;
+  height: 24px;
+}
+
+/* ---------- Design-system glass compatibility ---------- */
+
+/* Every glass surface in the design system declares only the `-webkit-` form of
+   `backdrop-filter`, which Chrome does not support (`CSS.supports` is false and
+   the declaration computes to `none`). Their fills are low-alpha washes that
+   rely entirely on the blur, so without it content reads straight through them.
+   Re-declaring the standard property restores the intended surface — this shim
+   belongs upstream in the design system. */
+.visual-card__bar,
+.glass-btn--bg-default,
+.glass-btn--bg-dim,
+.search__pill,
+.search__close-icon,
+.navbar__itinerary--default,
+.navbar__itinerary--dim,
+.navbar__glass-chip--default,
+.navbar__glass-chip--dim,
+.bottom-action-bar--ios,
+.tabbar__pill {
+  backdrop-filter: var(--liquid-glass-filter);
+}
+
+.navbar--default::before {
+  backdrop-filter: blur(20px) saturate(1.8);
+}
+
+.bottom-sheet__panel {
+  backdrop-filter: var(--liquid-glass-sheet-filter);
+}
+
+.ios-dialog__glass {
+  backdrop-filter: blur(40px) saturate(1.8);
+}
+
+/* ============================================================
+   v2 — the trip described in pages
+   ============================================================ */
+
+/* Both v2 steps cover the home screen rather than replacing it, exactly as the
+   results screen does, so backing out restores the filled-in fields instantly.
+   They share the results screen's push-in so every forward move in the funnel
+   reads the same way. */
+.route-page,
+.pickup-page {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--background-base-default);
+  animation: rides-results-in 280ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .route-page,
+  .pickup-page {
+    animation: none;
+  }
+}
+
+.route-page__header,
+.pickup-page__header {
+  flex: none;
+  /* Anchor for the step's A/B switch — the switch is `position: absolute` so
+     it rides on the trailing edge of whichever page's navbar it sits in. */
+  position: relative;
+}
+
+/* ---------- Route page ---------- */
+
+/* The route body is the v1 sheet's, which sizes itself to its container and
+   pins the keyboard to the bottom — so it needs to be the flex child that takes
+   the space left under the navbar. */
+.route-page .sheet--route {
+  flex: 1;
+  min-height: 0;
+}
+
+/* ---------- Pickup page ---------- */
+
+.pickup-page__body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  /* 24px between the two questions, matching the frame — far enough apart that
+     the options don't read as part of the date card. */
+  gap: var(--space-lg);
+  padding: var(--space-lg) var(--space) var(--space-xl);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.pickup-page__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space);
+}
+
+.pickup-page__heading {
+  margin: 0;
+  font-family: var(--type-subtitle-family);
+  font-size: var(--type-subtitle-size);
+  font-weight: var(--type-subtitle-weight);
+  line-height: var(--type-subtitle-lh);
+  color: var(--text-base-default);
+}
+
+/* Heading + subtext ride together in a tight stack, so the section's 16px
+   flex gap sits below the pair rather than between them. */
+.pickup-page__section-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+}
+
+.pickup-page__subheading {
+  margin: 0;
+  font-family: var(--type-caption-regular-family);
+  font-size: var(--type-caption-size);
+  line-height: var(--type-caption-lh);
+  color: var(--text-base-subtext);
+}
+
+.pickup-page__options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+/* WidgetField's own active state is empty-only (it exists for an "Add return"
+   style CTA), so a populated field whose picker is open has no aqua treatment
+   to inherit. Tints the caption and glyph to match the card's focus ring. */
+.widget-field--focused .widget-field__caption {
+  color: var(--text-link-default);
+}
+
+.widget-field--focused .widget-field__icon {
+  color: var(--icon-secondary-default);
+}
+
+/* ---------- "When should we pick you up?" options ---------- */
+
+.pickup-option {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-md);
+  width: 100%;
+  padding: var(--space-md);
+  border: 1px solid var(--border-base-default);
+  border-radius: var(--rounded);
+  background: var(--background-base-default);
+  text-align: start;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+/* Touch surface, so press rather than hover — the same substitution the design
+   system makes for WidgetField. */
+.pickup-option:active {
+  border-color: var(--border-base-pressed);
+  background: var(--background-base-hover);
+}
+
+.pickup-option:focus-visible {
+  outline: 2px solid var(--border-secondary-default);
+  outline-offset: -2px;
+}
+
+.pickup-option__icon {
+  flex: none;
+  color: var(--icon-base-default);
+}
+
+.pickup-option__body {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+}
+
+/* The tag sits on the title's line and against the trailing edge, so the title
+   keeps the leading edge and the two never collide. */
+.pickup-option__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.pickup-option__title {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--type-body-semibold-family);
+  font-size: var(--type-body-size);
+  font-weight: var(--type-body-semibold-weight);
+  line-height: var(--type-body-lh);
+  color: var(--text-base-default);
+}
+
+.pickup-option__description {
+  font-family: var(--type-caption-regular-family);
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-caption-regular-weight);
+  line-height: var(--type-caption-lh);
+  color: var(--text-base-subtext);
+}
+
+/* ---------- Pickup time sheet ---------- */
+
+.sheet--time {
+  gap: var(--space-lg);
+  padding-block-end: var(--space-lg);
+}
+
+/* Caution rather than info: this is the cost of timing by hand, not a note. The
+   glyph stays default ink per the frame — the tint is carried by the surface. */
+.pickup-note {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space);
+  margin: 0;
+  padding: var(--space-md);
+  border-radius: var(--rounded);
+  background: var(--background-caution-subtle);
+  font-family: var(--type-caption-regular-family);
+  font-size: var(--type-caption-size);
+  line-height: var(--type-caption-lh);
+  color: var(--text-base-default);
+}
+
+.pickup-note__icon {
+  flex: none;
+  color: var(--icon-base-default);
+}
+
+/* ---------- Add your flight ---------- */
+
+/* Same shape as the route sheet: only the list between the search field and the
+   keyboard scrolls, so the keys stay put like a native keyboard's. */
+.sheet--flights {
+  height: 100%;
+  min-height: 0;
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.sheet__results--flights {
+  flex: 1;
+  min-height: 0;
+  gap: var(--space);
+  padding: var(--space-sm) var(--space) var(--space);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.sheet--flights .keyboard {
+  flex: none;
+}
+
+.flight-filter {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.flight-filter__label {
+  font-family: var(--type-caption-semibold-family);
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-caption-semibold-weight);
+  line-height: var(--type-caption-lh);
+  color: var(--text-base-default);
+}
+
+.flight-results__count {
+  margin: 0;
+}
+
+/* ---------- Flight card ---------- */
+
+.flight-card {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-md);
+  width: 100%;
+  padding: var(--space-sm) var(--space-md) var(--space-md);
+  border: 1px solid var(--border-base-default);
+  border-radius: var(--rounded);
+  background: var(--background-base-default);
+  text-align: start;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.flight-card:active {
+  background: var(--background-base-hover);
+}
+
+.flight-card:focus-visible {
+  outline: 2px solid var(--border-secondary-default);
+  outline-offset: -2px;
+}
+
+.flight-card--selected {
+  border-color: var(--border-secondary-default);
+}
+
+/* Brand mark — sized and clipped to the frame's circle, never recoloured. */
+.flight-card__logo {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  margin-block-start: 6px;
+  border-radius: var(--rounded-full);
+  object-fit: cover;
+}
+
+.flight-card__body {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+  padding-block-start: 2px;
+}
+
+.flight-card__route {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-family: var(--type-subtitle-family);
+  font-size: var(--type-subtitle-size);
+  font-weight: var(--type-subtitle-bold-weight);
+  line-height: var(--type-subtitle-lh);
+  color: var(--text-base-default);
+}
+
+.flight-card__times,
+.flight-card__airline {
+  font-family: var(--type-caption-regular-family);
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-caption-regular-weight);
+  line-height: var(--type-caption-lh);
+  color: var(--text-base-default);
+}
+
+/* Set apart because it is the only line that answers the question — everything
+   above it is there to confirm this is the right flight. */
+.flight-card__arrival {
+  margin-block-start: var(--space-sm);
+  font-family: var(--type-caption-semibold-family);
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-caption-semibold-weight);
+  line-height: var(--type-caption-lh);
+  color: var(--text-base-default);
+}
+
+.flight-card--selected .flight-card__arrival {
+  /* Keeps the landing line clear of the tick in the same corner. */
+  padding-inline-end: var(--space-xl);
+}
+
+.flight-card__check {
+  position: absolute;
+  inset-inline-end: var(--space-md);
+  inset-block-end: var(--space-md);
+  color: var(--icon-secondary-default);
+}
+
+/* ---------- Tracking tag on the home widget ---------- */
+
+.rides-card__tagged {
+  position: relative;
+}
+
+/* WidgetField's value fills the row and truncates at its own edge, so without a
+   reserved gutter a long place name would run underneath the tag instead of
+   ellipsing before it. Applied only while a tag is actually there. */
+.rides-card__tagged:has(.rides-card__tag) .widget-field__value {
+  padding-inline-end: 132px;
+}
+
+/* Anchored to the value line (WidgetField centres a 36px label+value block in
+   its 68px box, putting the value at 32px) and to the trailing gutter. */
+.rides-card__tag {
+  position: absolute;
+  inset-inline-end: var(--space);
+  inset-block-start: 32px;
+  pointer-events: none;
+}
+
+/* ---------- A/B switches (prototype only) ---------- */
+
+/* Deliberately not a design-system surface: it belongs to no variant, and
+   reading as chrome rather than product keeps it from being reviewed as part of
+   the test.
+
+   Placed in the trailing navbar corner, which every screen leaves free — these
+   toolbars carry a back button and a centred title and no trailing action, and
+   the other edges are taken by a keyboard, a CTA, or the card stack. */
+.variant-switch {
+  position: fixed;
+  z-index: 20;
+  inset-block-start: var(--space-sm);
+  inset-inline-end: var(--space-sm);
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: 3px 3px 3px var(--space-sm);
+  border-radius: var(--rounded-full);
+  background: var(--background-base-default);
+  box-shadow: var(--elevation-raised);
+}
+
+.variant-switch__label {
+  font-family: var(--type-caption-semibold-family);
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-caption-semibold-weight);
+  line-height: var(--type-caption-lh);
+  color: var(--text-base-subtext);
+}
+
+/* The pickup step's own switch, anchored to that page's navbar instead of the
+   viewport — it belongs to the page, and only exists while the page does. With
+   no label to widen it, it clears the centred title. */
+.variant-switch--step {
+  position: absolute;
+  padding-inline-start: 3px;
+}
+
+/* The control's segments are `flex: 1`, so it needs a width to divide up — in a
+   shrink-to-fit container it would otherwise collapse. Scaled to the arm count
+   so every switch keeps the same per-segment size — the pickup step's 3-arm
+   switch is a third wider than the 2-arm one on the home screen. */
+.variant-switch .seg-control {
+  width: calc(var(--variant-count, 2) * 44px + 4px);
+  height: 28px;
+  padding: 2px;
+}
+
+/* ============================================================
+   Pickup step, v2 — radios with the picker expanding in place
+   ============================================================ */
+
+.pickup-choice {
+  border: 1px solid var(--border-base-default);
+  border-radius: var(--rounded);
+  background: var(--background-base-default);
+  padding: var(--space-md);
+  transition: border-color 0.15s;
+}
+
+/* Aqua outline on the chosen card, so the expanded picker reads as belonging to
+   the option above it rather than floating under both. */
+.pickup-choice--selected {
+  border-color: var(--border-secondary-default);
+}
+
+.pickup-choice__head {
+  display: flex;
+  align-items: flex-start;
+  /* 16px against the design system's 20px radio puts the text at the same 48px
+     indent that `.pickup-option`'s 24px glyph and 12px gap produce, so the two
+     layouts line their titles up in the same place. */
+  gap: var(--space);
+  cursor: pointer;
+}
+
+.pickup-choice__content {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+}
+
+/* The tag rides on the title's line and against the trailing edge, as in the
+   cards layout. */
+.pickup-choice__head-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  /* The 20px radio is 2px shorter than the 24px glyph the cards layout uses, so
+     the title needs the difference to sit on the marker's centre line. */
+  min-height: 24px;
+}
+
+.pickup-choice__title {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--type-body-semibold-family);
+  font-size: var(--type-body-size);
+  font-weight: var(--type-body-semibold-weight);
+  line-height: var(--type-body-lh);
+  color: var(--text-base-default);
+}
+
+.pickup-choice__description {
+  font-family: var(--type-caption-regular-family);
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-caption-regular-weight);
+  line-height: var(--type-caption-lh);
+  color: var(--text-base-subtext);
+}
+
+/* Full width inside the card's padding — the frame runs the wheel and the note
+   edge to edge rather than indenting them under the title. */
+.pickup-choice__expanded {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding-block-start: var(--space-sm);
+}
+
+/* ---------- Chosen flight, stated back inside its option ---------- */
+
+.pickup-flight {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+}
+
+.pickup-flight__route {
+  margin: 0;
+  font-family: var(--type-body-semibold-family);
+  font-size: var(--type-body-size);
+  font-weight: var(--type-body-semibold-weight);
+  line-height: var(--type-body-lh);
+  color: var(--text-base-default);
+}
+
+.pickup-flight__detail {
+  margin: 0;
+  font-family: var(--type-caption-regular-family);
+  font-size: var(--type-caption-size);
+  line-height: var(--type-caption-lh);
+  color: var(--text-base-subtext);
+}
+
+/* A text link, not a Button: it sits inside a card whose own selection is the
+   primary action, and a second pill here would compete with the pinned Confirm.
+   There is no ghost/link Button variant in the design system. */
+.pickup-flight__change {
+  align-self: start;
+  margin-block-start: var(--space-2xs);
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: var(--type-caption-semibold-family);
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-caption-semibold-weight);
+  line-height: var(--type-caption-lh);
+  color: var(--text-link-default);
+  cursor: pointer;
+}
+
+.pickup-flight__change:active {
+  color: var(--text-link-pressed);
+}
+
+/* ---------- Pinned Confirm bar ---------- */
+
+/* The step commits from here, so it stays in reach on a short device instead of
+   scrolling away under the options. */
+.pickup-page__bar {
+  flex: none;
+  padding: var(--space-sm) var(--space) var(--space);
+  background: var(--background-base-default);
+  box-shadow: inset 0 1px 0 0 var(--border-base-default);
+}
+
+.confirm:disabled {
+  background: var(--background-neutral-disabled);
+  color: var(--text-base-disabled);
+  cursor: default;
+}
+
+/* ============================================================
+   Pickup step, v2 — cards without radios, the picker expands in place
+   ============================================================ */
+
+/* The card itself carries the state — no marker beside the title. So the same
+   aqua focus ring used for v2's chosen option belongs to the card as a whole,
+   not to a header row inside it. Padding lives on the head button (below) so
+   the tap feedback covers the whole collapsed card. */
+.pickup-card {
+  overflow: hidden;
+  border: 1px solid var(--border-base-default);
+  border-radius: var(--rounded);
+  background: var(--background-base-default);
+  transition: border-color 0.15s;
+}
+
+.pickup-card--selected {
+  border-color: var(--border-secondary-default);
+}
+
+/* Only the head is a button — dragging the wheel would otherwise register as
+   a re-tap on the already-selected card. */
+.pickup-card__head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-md);
+  width: 100%;
+  padding: var(--space-md);
+  border: none;
+  background: none;
+  text-align: start;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+/* Touch surface, so press rather than hover — matches v1's `.pickup-option`. */
+.pickup-card__head:active {
+  background: var(--background-base-hover);
+}
+
+.pickup-card__head:focus-visible {
+  outline: 2px solid var(--border-secondary-default);
+  outline-offset: -2px;
+}
+
+.pickup-card__icon {
+  flex: none;
+  color: var(--icon-base-default);
+}
+
+.pickup-card__content {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+}
+
+/* The tag rides on the title's line and against the trailing edge, matching
+   v1's `.pickup-option__head`. 24px min so the icon's centre line and the
+   title's baseline agree. */
+.pickup-card__head-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-height: 24px;
+}
+
+.pickup-card__title {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--type-body-semibold-family);
+  font-size: var(--type-body-size);
+  font-weight: var(--type-body-semibold-weight);
+  line-height: var(--type-body-lh);
+  color: var(--text-base-default);
+}
+
+.pickup-card__description {
+  font-family: var(--type-caption-regular-family);
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-caption-regular-weight);
+  line-height: var(--type-caption-lh);
+  color: var(--text-base-subtext);
+}
+
+/* Full width inside the card's edges — the wheel and warning run flush like
+   they do in v2's chosen card. 8px top opens a little air below the head. */
+.pickup-card__expanded {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md) var(--space-md);
+}
+
+/* ---------- v2 pickup: committed manual time (summary state) ---------- */
+
+/* Rides inside the shared `.pickup-card__head` button, replacing the icon +
+   title + description of the picking state with a WidgetField-style caption +
+   value on the leading edge and a "Change" text link on the trailing edge —
+   the two things a committed answer needs to show and be undone from. */
+.pickup-time-summary {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+/* Caption and value stack tightly, like the same pair on a WidgetField, so
+   the two lines read as one field rather than a heading over a value. */
+.pickup-time-summary__labels {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  min-width: 0;
+}
+
+.pickup-time-summary__caption {
+  font-family: var(--type-caption-regular-family);
+  font-size: var(--type-caption-size);
+  line-height: var(--type-caption-lh);
+  color: var(--text-base-subtext);
+}
+
+.pickup-time-summary__value {
+  font-family: var(--type-body-semibold-family);
+  font-size: var(--type-body-size);
+  font-weight: var(--type-body-semibold-weight);
+  line-height: var(--type-body-lh);
+  color: var(--text-base-default);
+}
+
+/* Text link, not a Button — the whole card head is the primary tap, this is
+   the visible affordance sitting on the trailing edge. */
+.pickup-time-summary__change {
+  flex: none;
+  font-family: var(--type-body-semibold-family);
+  font-size: var(--type-body-size);
+  font-weight: var(--type-body-semibold-weight);
+  line-height: var(--type-body-lh);
+  color: var(--text-link-default);
+}
+
+/* ---------- v2 pickup: committed flight (summary state) ---------- */
+
+/* Sits inside `.pickup-card__expanded`, which supplies the outer padding and
+   the 8px gap between the sections. */
+.pickup-flight-summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space);
+}
+
+/* Restates the picked flight the way the search list showed it — same logo,
+   route, and landing line — so recognition of "this is the flight I chose"
+   is immediate. Subtle border on a plain surface, per the frame. */
+.pickup-flight-summary__box {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  border: 1px solid var(--border-base-default);
+  border-radius: var(--rounded);
+  background: var(--background-base-subtle);
+}
+
+/* Brand mark — sized and clipped to the frame's circle, never recoloured. */
+.pickup-flight-summary__logo {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--rounded-full);
+  object-fit: cover;
+}
+
+.pickup-flight-summary__body {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  /* Leaves room for the "Change" text pinned to the top-right — same reserve
+     trick the car card uses for its price column. */
+  padding-inline-end: 56px;
+}
+
+.pickup-flight-summary__route {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-family: var(--type-subtitle-family);
+  font-size: var(--type-subtitle-size);
+  font-weight: var(--type-subtitle-bold-weight);
+  line-height: var(--type-subtitle-lh);
+  color: var(--text-base-default);
+}
+
+.pickup-flight-summary__meta {
+  font-family: var(--type-caption-regular-family);
+  font-size: var(--type-caption-size);
+  line-height: var(--type-caption-lh);
+  color: var(--text-base-default);
+}
+
+/* The landing line is the one that answers "when will you land, and where do
+   I meet you?" — everything above confirms the flight, this commits to a
+   time and terminal. Semibold, per the search list. */
+.pickup-flight-summary__landing {
+  margin-block-start: var(--space-xs);
+  font-family: var(--type-caption-semibold-family);
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-caption-semibold-weight);
+  line-height: var(--type-caption-lh);
+  color: var(--text-base-default);
+}
+
+.pickup-flight-summary__change {
+  position: absolute;
+  inset-block-start: var(--space-md);
+  inset-inline-end: var(--space-md);
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: var(--type-body-semibold-family);
+  font-size: var(--type-body-size);
+  font-weight: var(--type-body-semibold-weight);
+  line-height: var(--type-body-lh);
+  color: var(--text-link-default);
+  cursor: pointer;
+}
+
+.pickup-flight-summary__change:active {
+  color: var(--text-link-pressed);
+}
+
+.pickup-flight-summary__blurb {
+  margin: 0;
+  font-family: var(--type-caption-regular-family);
+  font-size: var(--type-caption-size);
+  line-height: var(--type-caption-lh);
+  color: var(--text-base-default);
+}
+
+/* Two side-by-side pill chips naming the commitments that come with
+   tracking. `flex-wrap` so a narrow canvas breaks them to two rows rather
+   than clipping. */
+.pickup-flight-summary__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.pickup-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--rounded-full);
+  font-family: var(--type-caption-semibold-family);
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-caption-semibold-weight);
+  line-height: var(--type-caption-lh);
+}
+
+/* Success + info variants, tinted so each commitment reads as its own
+   category rather than as generic tags. */
+.pickup-chip--success {
+  background: var(--background-success-subtle);
+  color: var(--text-success-default);
+}
+
+.pickup-chip--info {
+  background: var(--background-primary-subtle);
+  color: var(--text-link-default);
+}
