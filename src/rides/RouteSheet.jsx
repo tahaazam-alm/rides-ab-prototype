@@ -4,6 +4,7 @@ import { Icon } from './icons'
 import { Keyboard } from './Keyboard'
 import { RouteField } from './RouteField'
 import { searchPlaces } from './data'
+import { useT } from '../i18n.jsx'
 
 export function RouteSheet({
   pickup,
@@ -16,15 +17,18 @@ export function RouteSheet({
   onClear,
   onPickSuggestion,
 }) {
+  const t = useT()
   // `focused` keeps naming the field being edited even after the keyboard is
-  // dismissed, so the results list stays put instead of resetting.
+  // dismissed, so the results list stays put instead of resetting. It also
+  // narrows the pool — pickup only shows airports, destination shows the
+  // everything-else list.
   const query = focused === 'pickup' ? pickup : destination
-  const results = searchPlaces(query)
+  const results = searchPlaces(query, focused)
 
   // First slot mirrors the raw query the way iOS autocorrect does; the rest are
   // the best-matching place names.
   const wordSuggestions = [
-    query.trim() || 'Search',
+    query.trim() || t('common.search'),
     ...results.slice(0, 2).map((r) => r.title.split(',')[0]),
   ].slice(0, 3)
 
@@ -35,7 +39,7 @@ export function RouteSheet({
       <div className="rides-card rides-card--route">
         <RouteField
           id="pickup"
-          label="Pickup location"
+          label={t('rides.route.pickupLabel')}
           value={pickup}
           icon="target"
           active={keyboardOpen && focused === 'pickup'}
@@ -46,7 +50,7 @@ export function RouteSheet({
         <Separator className="rides-card__rule" />
         <RouteField
           id="destination"
-          label="Destination"
+          label={t('rides.route.destinationLabel')}
           value={destination}
           icon="pin"
           active={keyboardOpen && focused === 'destination'}
@@ -89,10 +93,8 @@ export function RouteSheet({
             </button>
           ))
         ) : (
-          <p className="sheet__hint">
-            Did you not find what you are looking for?
-            <br />
-            Try to type more information on the search.
+          <p className="sheet__hint" style={{ whiteSpace: 'pre-line' }}>
+            {t('rides.route.hint')}
           </p>
         )}
       </div>

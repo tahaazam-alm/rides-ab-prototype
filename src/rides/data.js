@@ -1,20 +1,97 @@
-// Sample content for the Rides flow, matching the Figma frames.
-// Places the two route fields search against.
+// Sample content for the Rides flow.
+//
+// The two route fields search against different pools: the pickup field only
+// offers airports (the primary use case is a traveller being collected from
+// an arrival), and the destination field offers hotels, landmarks, and
+// districts. Titles carry no commas so the keyboard wordSuggestion split
+// stays clean — the design uses a middle dot in the subtitle instead.
 export const PLACES = [
-  { title: 'The Address hotel, Business bay', subtitle: 'Dubai, United Arab Emirates', distance: '10 km' },
-  { title: 'Dubai International Airport - DXB', subtitle: 'Airport, Dubai', distance: '0 km', airport: 'DXB', city: 'Dubai', terminal: 'Terminal 2' },
-  { title: 'Al Maktoum International Airport - DWC', subtitle: 'Airport, Dubai', distance: '48 km', airport: 'DWC', city: 'Dubai', terminal: 'Terminal 1' },
-  { title: 'Burj Khalifa', subtitle: 'Downtown Dubai, United Arab Emirates', distance: '12 km' },
-  { title: 'The Dubai Mall', subtitle: 'Downtown Dubai, United Arab Emirates', distance: '13 km' },
-  { title: 'Palm Jumeirah', subtitle: 'Dubai, United Arab Emirates', distance: '25 km' },
-  { title: 'Dubai Marina', subtitle: 'Dubai, United Arab Emirates', distance: '28 km' },
-  { title: 'Business Bay', subtitle: 'Dubai, United Arab Emirates', distance: '11 km' },
+  // ---- Airports (pickup pool) ----
+  {
+    title: 'Dubai International Airport (DXB)',
+    subtitle: 'Airport · Dubai · UAE',
+    address: 'Airport Road, Al Garhoud, Dubai',
+    distance: '0 km',
+    airport: 'DXB',
+    city: 'Dubai',
+    terminal: 'Terminal 2',
+  },
+  {
+    title: 'Al Maktoum International Airport (DWC)',
+    subtitle: 'Airport · Dubai · UAE',
+    address: 'Jebel Ali, Dubai',
+    distance: '48 km',
+    airport: 'DWC',
+    city: 'Dubai',
+    terminal: 'Terminal 1',
+  },
+  // ---- Destinations (destination pool) ----
+  {
+    title: 'Burj Khalifa',
+    subtitle: 'Downtown Dubai · UAE',
+    address: 'Sheikh Mohammed Bin Rashed Boulevard, Downtown, Dubai',
+    distance: '12 km',
+  },
+  {
+    title: 'The Dubai Mall',
+    subtitle: 'Downtown Dubai · UAE',
+    address: 'Financial Center Road, Downtown, Dubai',
+    distance: '13 km',
+  },
+  {
+    title: 'Palm Jumeirah',
+    subtitle: 'Dubai · UAE',
+    address: 'Palm Jumeirah, Dubai',
+    distance: '25 km',
+  },
+  {
+    title: 'Dubai Marina',
+    subtitle: 'Dubai · UAE',
+    address: 'Al Marsa Street, Dubai Marina, Dubai',
+    distance: '28 km',
+  },
+  {
+    title: 'Burj Al Arab',
+    subtitle: 'Jumeirah · Dubai · UAE',
+    address: 'Jumeirah Street, Umm Suqeim, Dubai',
+    distance: '22 km',
+  },
+  {
+    title: 'Atlantis The Palm',
+    subtitle: 'Palm Jumeirah · Dubai · UAE',
+    address: 'Crescent Road, The Palm Jumeirah, Dubai',
+    distance: '30 km',
+  },
+  {
+    title: 'Global Village',
+    subtitle: 'Dubailand · Dubai · UAE',
+    address: 'Sheikh Mohammed Bin Zayed Road, Dubailand, Dubai',
+    distance: '32 km',
+  },
+  {
+    title: 'Dubai Frame',
+    subtitle: 'Zabeel Park · Dubai · UAE',
+    address: 'Zabeel Park, Al Kifaf, Dubai',
+    distance: '14 km',
+  },
 ]
 
-export const searchPlaces = (query) => {
+/**
+ * `field` narrows the pool — pickup shows airports, destination shows the
+ * everything-else list. Falls back to the destination pool if unspecified,
+ * which is what a caller without the field context (e.g. an early debug
+ * console session) would want.
+ */
+export const searchPlaces = (query, field) => {
   const q = query.trim().toLowerCase()
-  if (!q) return PLACES.slice(0, 4)
-  return PLACES.filter((p) => (p.title + ' ' + p.subtitle).toLowerCase().includes(q))
+  const pool =
+    field === 'pickup'
+      ? PLACES.filter((p) => p.airport)
+      : PLACES.filter((p) => !p.airport)
+  if (!q) return pool.slice(0, 4)
+  return pool.filter((p) =>
+    (p.title + ' ' + p.subtitle).toLowerCase().includes(q),
+  )
 }
 
 export const findPlace = (title) => PLACES.find((p) => p.title === title)
@@ -50,6 +127,10 @@ export const UPCOMING = [
 // The calendar frame shows Sep 2026, the 5th as today and the 15th selected.
 export const TODAY = { year: 2026, month: 8, day: 5 }
 
+// Default English month/weekday names. Locale-aware call sites go through
+// the useT-bound hooks in i18n.jsx; these constants are the fallback used
+// wherever the formatters are called directly (test scaffolding, non-React
+// helpers), and the same source the CalendarGrid still reads.
 export const MONTHS = [
   'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
@@ -57,28 +138,34 @@ export const MONTHS = [
 
 export const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
-export const formatDate = ({ year, month, day }) =>
-  `${day} ${MONTHS[month]} ${year}`
+// Underlying formatters accept the month/weekday arrays as arguments so the
+// output can be flipped between English and Arabic without either component
+// or data touching each other's concerns. React consumers get the locale
+// version through `useDateFormat()` in i18n.jsx.
+
+export const formatDate = ({ year, month, day }, months = MONTHS) =>
+  `${day} ${months[month]} ${year}`
 
 export const formatTime = ({ hour, minute, meridiem }) =>
   `${hour}:${String(minute).padStart(2, '0')} ${meridiem}`
 
-// "17 Sep, 9:20 PM" — the review screen's pickup line.
-export const formatDayTime = (date, time) =>
-  `${date.day} ${MONTHS[date.month]}, ${formatTime(time)}`
+// "17 Sep 2026, 9:20 PM" — the review screen's pickup line. Year included so
+// the row reads as an unambiguous commitment.
+export const formatDayTime = (date, time, months = MONTHS) =>
+  `${date.day} ${months[date.month]} ${date.year}, ${formatTime(time)}`
 
 // Short itinerary label for the results navbar: "15 Sep – 12:30 PM".
-export const formatShortDateTime = (date, time) =>
-  `${date.day} ${MONTHS[date.month]} – ${formatTime(time)}`
+export const formatShortDateTime = (date, time, months = MONTHS) =>
+  `${date.day} ${months[date.month]} – ${formatTime(time)}`
 
 /**
  * Free-cancellation deadline shown on every car card: 24 hours before pickup,
  * formatted the same way. Derived rather than hardcoded so the deadline stays
  * behind whatever pickup the user actually chose.
  */
-export const formatCancellation = (date, time) => {
+export const formatCancellation = (date, time, months = MONTHS) => {
   const d = new Date(date.year, date.month, date.day - 1)
-  return `${d.getDate()} ${MONTHS[d.getMonth()]} - ${formatTime(time)}`
+  return `${d.getDate()} ${months[d.getMonth()]} - ${formatTime(time)}`
 }
 
 // The cars the search returns, matching the Figma results frame. `width` is the
@@ -248,6 +335,12 @@ export const searchFlights = (query, airportCode) => {
 
 // "Arrives on Thu 15 Sep, 12:30 PM" — the flight card's landing line. The day
 // comes from the pickup date the traveller already picked, so the two agree.
-export const formatArrival = (date, flight) =>
-  `Arrives on ${WEEKDAYS[new Date(date.year, date.month, date.day).getDay()]} ` +
-  `${date.day} ${MONTHS[date.month]}, ${formatTime(flight.arrive)}`
+export const formatArrival = (
+  date,
+  flight,
+  months = MONTHS,
+  weekdays = WEEKDAYS,
+  arrivesOn = 'Arrives on',
+) =>
+  `${arrivesOn} ${weekdays[new Date(date.year, date.month, date.day).getDay()]} ` +
+  `${date.day} ${months[date.month]}, ${formatTime(flight.arrive)}`

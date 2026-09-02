@@ -2,6 +2,7 @@ import { Chip, Navbar } from 'design-system'
 import { CarCard } from './CarCard'
 import { Icon } from './icons'
 import { CARS, formatCancellation, formatShortDateTime } from './data'
+import { useCalendarLabels, useT } from '../i18n.jsx'
 
 export function RidesResults({
   pickup,
@@ -14,7 +15,9 @@ export function RidesResults({
   onSelectCar,
   inert,
 }) {
-  const cancellation = formatCancellation(date, time)
+  const t = useT()
+  const { months } = useCalendarLabels()
+  const cancellation = formatCancellation(date, time, months)
 
   return (
     // Inert while the review sits on top, so the cards behind it can't be tabbed to.
@@ -28,7 +31,7 @@ export function RidesResults({
             origin: pickup,
             destination,
             travelers: passengers,
-            dates: formatShortDateTime(date, time),
+            dates: formatShortDateTime(date, time, months),
           }}
         />
 
@@ -36,16 +39,16 @@ export function RidesResults({
             row is the frame's set of triggers and nothing behind them. */}
         <div className="rides-results__chips">
           <Chip
-            aria-label="Sort"
+            aria-label={t('common.search')}
             icon={<Icon name="arrowsDownUp" size={16} className="ds-icon" />}
           />
           <Chip
-            aria-label="Filters"
+            aria-label={t('common.search')}
             icon={<Icon name="sliders" size={16} className="ds-icon" />}
           />
-          <Chip label="Child seat" />
-          <Chip label="Luggage" dropdown />
-          <Chip label="Car type" dropdown />
+          <Chip label={t('rides.results.filterChildSeat')} />
+          <Chip label={t('rides.results.filterLuggage')} dropdown />
+          <Chip label={t('rides.results.filterCarType')} dropdown />
         </div>
       </header>
 

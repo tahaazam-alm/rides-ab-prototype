@@ -1,8 +1,10 @@
 import { useEffect, useRef } from 'react'
 import { Chip, Search } from 'design-system'
 import { FlightCard } from './FlightCard'
+import { Icon } from './icons'
 import { Keyboard } from './Keyboard'
 import { searchFlights } from './data'
+import { useT } from '../i18n.jsx'
 
 /**
  * The sheet's search field. The on-screen keyboard below is the input surface,
@@ -12,6 +14,7 @@ import { searchFlights } from './data'
  * onto the input.
  */
 export function FlightSearchField({ value, onChange, onFocus }) {
+  const t = useT()
   const ref = useRef(null)
 
   useEffect(() => {
@@ -22,7 +25,7 @@ export function FlightSearchField({ value, onChange, onFocus }) {
     <div ref={ref} onFocus={onFocus}>
       <Search
         value={value}
-        placeholder="Airline, flight number or city"
+        placeholder={t('rides.flightSearch.placeholder')}
         onChange={(e) => onChange(e.target.value)}
         onClear={() => onChange('')}
       />
@@ -45,13 +48,27 @@ export function FlightSearchSheet({
   onDismissKeyboard,
   onSelect,
 }) {
+  const t = useT()
+  const hasQuery = query.trim().length > 0
   const results = searchFlights(query, airport.airport)
 
+  // Fall through the dict on a missing key so unknown cities/airlines still
+  // render their raw English string rather than exposing a raw dot-path.
+  const localise = (key, fallback) => {
+    const v = t(key)
+    return v === key ? fallback : v
+  }
+  const cityLabel = localise(`rides.city.${airport.city}`, airport.city)
+
   // Same shape as the route sheet's: the raw query first, the way iOS autocorrect
-  // mirrors what you typed, then the carriers it matched.
+  // mirrors what you typed, then the carriers it matched (localised).
   const suggestions = [
-    query.trim() || 'Flight',
-    ...[...new Set(results.map((f) => f.airlineName))].slice(0, 2),
+    query.trim() || t('rides.flightSearch.flightWord'),
+    ...[
+      ...new Set(
+        results.map((f) => localise(`rides.airline.${f.airlineName}`, f.airlineName)),
+      ),
+    ].slice(0, 2),
   ].slice(0, 3)
 
   return (
@@ -63,34 +80,59 @@ export function FlightSearchSheet({
         onWheel={onDismissKeyboard}
         onTouchMove={onDismissKeyboard}
       >
-        {/* The filter surface behind this chip isn't designed yet, so the row is
-            the frame's trigger and nothing behind it — as on the results screen. */}
-        <div className="flight-filter">
-          <span className="flight-filter__label">Filter by</span>
-          <Chip label="Origin airport" dropdown />
-        </div>
-
-        <p className="eyebrow flight-results__count">
-          {results.length} {results.length === 1 ? 'flight' : 'flights'} to{' '}
-          {airport.city} ({airport.airport})
-        </p>
-
-        {results.length > 0 ? (
-          results.map((flight) => (
-            <FlightCard
-              key={flight.id}
-              flight={flight}
-              date={date}
-              selected={flight.id === selectedId}
-              onSelect={() => onSelect(flight)}
-            />
-          ))
+        {!hasQuery ? (
+          // Pre-query empty state — the sheet opens with nothing typed yet, so
+          // instead of dumping every inbound flight we prompt the traveller for
+          // input. Filter row + count are suppressed to match the frame.
+          <div className="flight-empty">
+            <span className="flight-empty__icon" aria-hidden="true">
+              <Icon name="maginfyingGlass" size={24} className="ds-icon" />
+            </span>
+            <p className="flight-empty__caption">
+              {t('rides.flightSearch.emptyStart')}
+            </p>
+          </div>
         ) : (
-          <p className="sheet__hint">
-            No flights match that search.
-            <br />
-            Try the airline, the flight number, or where you&rsquo;re flying from.
-          </p>
+          <>
+            {/* The filter surface behind this chip isn't designed yet, so the row
+                is the frame's trigger and nothing behind it — as on the results
+                screen. */}
+            <div className="flight-filter">
+              <span className="flight-filter__label">
+                {t('rides.flightSearch.filterBy')}
+              </span>
+              <Chip label={t('rides.flightSearch.originAirport')} dropdown />
+            </div>
+
+            <p className="eyebrow flight-results__count">
+              {results.length}{' '}
+              {results.length === 1
+                ? t('rides.flightSearch.flightTo')
+                : t('rides.flightSearch.flightsTo')}{' '}
+              {/* Isolate the city + airport so an RTL container doesn't split
+                  "Dubai (DXB)" (or its Arabic equivalent) into separately
+                  positioned runs. */}
+              <bdi>{cityLabel} ({airport.airport})</bdi>
+            </p>
+
+            {results.length > 0 ? (
+              results.map((flight) => (
+                <FlightCard
+                  key={flight.id}
+                  flight={flight}
+                  date={date}
+                  selected={flight.id === selectedId}
+                  onSelect={() => onSelect(flight)}
+                />
+              ))
+            ) : (
+              <p className="sheet__hint" style={{ whiteSpace: 'pre-line' }}>
+                {t('rides.flightSearch.emptyResults')}
+                {'\n'}
+                {t('rides.flightSearch.emptyHint')}
+              </p>
+            )}
+          </>
         )}
       </div>
 

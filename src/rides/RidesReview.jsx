@@ -18,6 +18,7 @@ import mokafaaLogo from '@ds-icons/logotypes/payment/mokafaa.svg'
 import shukranLogo from '../assets/cars/logo-shukran.png'
 import childSeatArt from '../assets/cars/addon-child-seat.png'
 import languageArt from '../assets/cars/addon-language.png'
+import { useCalendarLabels, useT } from '../i18n.jsx'
 
 // The design system ships the first three as brand logotypes; Shukran isn't in
 // that set, so its coin comes from the frame. All four are brand-locked — sized
@@ -45,6 +46,7 @@ function Points({ children }) {
 }
 
 function RewardRow({ reward }) {
+  const t = useT()
   return (
     <div className="reward">
       <img className="reward__logo" src={LOGOS[reward.logo]} alt="" />
@@ -52,7 +54,7 @@ function RewardRow({ reward }) {
       <Points>{reward.points}</Points>
       <button type="button" className="reward__info">
         <Icon name="infoCircle" size={24} className="ds-icon" />
-        <span className="sr-only">About {reward.name}</span>
+        <span className="sr-only">{t('rides.review.aboutReward')} {reward.name}</span>
       </button>
     </div>
   )
@@ -68,6 +70,8 @@ export function RidesReview({
   onBack,
   onContinue,
 }) {
+  const t = useT()
+  const { months } = useCalendarLabels()
   const [title, setTitle] = useState(TITLES[0])
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
@@ -90,10 +94,10 @@ export function RidesReview({
 
   const submit = () => {
     const next = {}
-    if (!firstName.trim()) next.firstName = 'Enter your first name'
-    if (!lastName.trim()) next.lastName = 'Enter your last name'
-    if (!/^\S+@\S+\.\S+$/.test(email.trim())) next.email = 'Enter a valid email address'
-    if (!/^\d{6,}$/.test(phone.replace(/\s/g, ''))) next.phone = 'Enter a valid phone number'
+    if (!firstName.trim()) next.firstName = t('rides.review.errFirstName')
+    if (!lastName.trim()) next.lastName = t('rides.review.errLastName')
+    if (!/^\S+@\S+\.\S+$/.test(email.trim())) next.email = t('rides.review.errEmail')
+    if (!/^\d{6,}$/.test(phone.replace(/\s/g, ''))) next.phone = t('rides.review.errPhone')
     setErrors(next)
     if (Object.keys(next).length > 0) return
     onContinue({ title, firstName, lastName, email, dialCode, phone, marketing, flightNumber, childSeat, language })
@@ -102,29 +106,33 @@ export function RidesReview({
   return (
     <div className="rides-review">
       <div className="rides-review__header">
-        <Navbar toolbar={{ variant: 'default', title: 'Review your booking', onBack }} />
+        <Navbar toolbar={{ variant: 'default', title: t('rides.review.title'), onBack }} />
       </div>
 
       <div className="rides-review__body">
         <ReviewSummary
           car={car}
-          cancellation={formatCancellation(date, time)}
+          cancellation={formatCancellation(date, time, months)}
           pickup={pickup}
-          pickupLabel={formatDayTime(date, time)}
-          /* A tracked flight knows which terminal it lands at; without one all
-             the airport can offer is its default. */
-          terminal={flight?.terminal ?? findPlace(pickup)?.terminal}
+          pickupAddress={findPlace(pickup)?.address}
           destination={destination}
+          destinationAddress={findPlace(destination)?.address}
+          dateTimeLabel={formatDayTime(date, time, months)}
+          trackingLabel={
+            flight
+              ? `${t('rides.home.tracking')} ${flight.number}`
+              : undefined
+          }
         />
 
         <section className="review-section">
-          <SectionHeading title="Contact details" />
+          <SectionHeading title={t('rides.review.contactDetails')} />
 
-          <div className="review-titles" role="group" aria-label="Title">
+          <div className="review-titles" role="group" aria-label={t('rides.review.titleAria')}>
             {TITLES.map((option) => (
               <Chip
                 key={option}
-                label={option}
+                label={t(`rides.review.title.${option}`)}
                 selected={title === option}
                 aria-pressed={title === option}
                 onClick={() => setTitle(option)}
@@ -133,7 +141,7 @@ export function RidesReview({
           </div>
 
           <TextInput
-            label="First name"
+            label={t('rides.review.firstName')}
             value={firstName}
             errorText={errors.firstName}
             onChange={(e) => {
@@ -142,7 +150,7 @@ export function RidesReview({
             }}
           />
           <TextInput
-            label="Last name"
+            label={t('rides.review.lastName')}
             value={lastName}
             errorText={errors.lastName}
             onChange={(e) => {
@@ -151,7 +159,7 @@ export function RidesReview({
             }}
           />
           <TextInput
-            label="Email"
+            label={t('rides.review.email')}
             type="email"
             value={email}
             errorText={errors.email}
@@ -162,7 +170,7 @@ export function RidesReview({
           />
 
           <div className="review-phone">
-            <TextInput label="Code" value={dialCode} dropdown readOnly>
+            <TextInput label={t('rides.review.code')} value={dialCode} dropdown readOnly>
               <ul className="review-codes">
                 {DIAL_CODES.map((code) => (
                   <li key={code}>
@@ -174,14 +182,16 @@ export function RidesReview({
                         setDialCode(code)
                       }}
                     >
-                      {code}
+                      {/* Dial codes are LTR numeric strings — force LTR so the
+                          "+966" doesn't reverse to "٦٦٩+" inside an RTL menu. */}
+                      <span dir="ltr">{code}</span>
                     </button>
                   </li>
                 ))}
               </ul>
             </TextInput>
             <TextInput
-              label="Phone number"
+              label={t('rides.review.phone')}
               type="tel"
               value={phone}
               errorText={errors.phone}
@@ -198,22 +208,22 @@ export function RidesReview({
                 checked={marketing}
                 onChange={(e) => setMarketing(e.target.checked)}
               />
-              <span>Get special deals and travel inspiration</span>
+              <span>{t('rides.review.marketingOptIn')}</span>
             </label>
             <button type="button" className="review-optin__info">
               <Icon name="infoCircle" size={24} className="ds-icon" />
-              <span className="sr-only">How we use your details</span>
+              <span className="sr-only">{t('rides.review.howWeUseInfo')}</span>
             </button>
           </div>
         </section>
 
         <section className="review-section">
           <SectionHeading
-            title="Flight number (optional)"
-            note="This helps us track your flight in case of delays"
+            title={t('rides.review.flightNumberTitle')}
+            note={t('rides.review.flightNumberNote')}
           />
           <TextInput
-            label="Flight number, e.g. SV 202"
+            label={t('rides.review.flightNumberPlaceholder')}
             value={flightNumber}
             leadingIcon={<Icon name="airplaneTilt" className="ds-icon" />}
             onChange={(e) => setFlightNumber(e.target.value)}
@@ -221,14 +231,17 @@ export function RidesReview({
         </section>
 
         <section className="review-section">
-          <SectionHeading title="Extras" note="Will be provided based on availability" />
+          <SectionHeading
+            title={t('rides.review.extras')}
+            note={t('rides.review.extrasNote')}
+          />
 
           {car.childSeat && (
             <div className="addon">
               <img className="addon__art" src={childSeatArt} alt="" />
               <label className="addon__body">
-                <span className="addon__name">Child seat</span>
-                <span className="addon__note">Secure rides for children</span>
+                <span className="addon__name">{t('rides.review.childSeatName')}</span>
+                <span className="addon__note">{t('rides.review.childSeatNote')}</span>
                 <Checkbox
                   className="addon__check"
                   checked={childSeat}
@@ -242,23 +255,24 @@ export function RidesReview({
             <img className="addon__art" src={languageArt} alt="" />
             <div className="addon__body">
               <span className="addon__name">
-                Language preference <span className="addon__optional">optional</span>
+                {t('rides.review.languageName')}{' '}
+                <span className="addon__optional">
+                  {t('rides.review.languageOptional')}
+                </span>
               </span>
-              <span className="addon__note">
-                We will try our best to match your preference
-              </span>
+              <span className="addon__note">{t('rides.review.languageNote')}</span>
             </div>
             {/* A 40px pill, not the 56px DS field the frame's legacy component
                 maps to. A native select gives it real behaviour. */}
             <div className="pill-select">
               <select
                 value={language}
-                aria-label="Language preference"
+                aria-label={t('rides.review.languageAria')}
                 onChange={(e) => setLanguage(e.target.value)}
               >
                 {LANGUAGES.map((option) => (
                   <option key={option} value={option}>
-                    {option}
+                    {t(`rides.review.language.${option}`)}
                   </option>
                 ))}
               </select>
@@ -269,13 +283,13 @@ export function RidesReview({
 
         <section className="review-section">
           <SectionHeading
-            title="Rewards you can earn"
-            note="This booking is eligible for one of the following rewards"
+            title={t('rides.review.rewards')}
+            note={t('rides.review.rewardsNote')}
           />
 
           <div className="reward-featured">
             <p className="reward-featured__rate">
-              1 Point equals
+              {t('rides.review.pointEquals')}
               <Icon name="riyal" size={11} height={13} className="ds-icon" />
               {FEATURED_REWARD.rate}
             </p>
@@ -297,12 +311,14 @@ export function RidesReview({
 
       <footer className="review-bar">
         <div className="review-bar__content">
-          <p className="review-bar__price">SAR {car.price}</p>
+          <p className="review-bar__price">
+            {t('rides.review.currency')} {car.price}
+          </p>
           <button type="button" className="review-bar__link">
-            Price breakdown
+            {t('rides.review.priceBreakdown')}
           </button>
         </div>
-        <Button variant="primary" size="default" label="Continue" onClick={submit} />
+        <Button variant="primary" size="default" label={t('common.continue')} onClick={submit} />
       </footer>
     </div>
   )

@@ -11,14 +11,26 @@ import { formatTime } from './data'
 const LOGOS = { EK, FZ, QR, SV }
 
 /**
- * The v2 pickup page's "a flight is committed" state, rendered inside the
- * flight card's expanded body. States the picked flight back the way the
- * search list showed it (logo, route, times, carrier + number, landing +
- * terminal) with a "Change" link that reopens the search, then spells out the
- * two commitments that come with tracking so the traveller knows what they've
- * bought.
+ * The "a flight is committed" state, rendered inside the flight card's
+ * expanded body. States the picked flight back the way the search list showed
+ * it (logo, route, times, carrier + number, landing + terminal) with an
+ * action link on the corner of the details box.
+ *
+ * Two flavours via `minimal`:
+ *   Full (default) — v2 pickup page. "Change" label + the two commitment
+ *     chips ("Delay tracked", "60 min free wait") + the "we track your
+ *     flight" blurb below, so the traveller sees exactly what tracking
+ *     buys them.
+ *   Minimal — v1 date & time sheet. "Remove" label, no chips, no blurb — the
+ *     traveller is on the summary screen and just wants to confirm or undo.
  */
-export function PickupFlightSummary({ flight, airport, onChange }) {
+export function PickupFlightSummary({
+  flight,
+  airport,
+  onChange,
+  changeLabel = 'Change',
+  minimal = false,
+}) {
   return (
     <div className="pickup-flight-summary">
       <div className="pickup-flight-summary__box">
@@ -51,26 +63,30 @@ export function PickupFlightSummary({ flight, airport, onChange }) {
           className="pickup-flight-summary__change"
           onClick={onChange}
         >
-          Change
+          {changeLabel}
         </button>
       </div>
 
-      <p className="pickup-flight-summary__blurb">
-        Your flight will be tracked and driver will arrive accordingly
-      </p>
+      {!minimal && (
+        <p className="pickup-flight-summary__blurb">
+          Your flight will be tracked and driver will arrive accordingly
+        </p>
+      )}
 
       {/* The two commitments that come with tracking, made visible so the
           traveller knows exactly what "we'll adjust for delays" turns into. */}
-      <div className="pickup-flight-summary__chips">
-        <span className="pickup-chip pickup-chip--success">
-          <Icon name="shieldCheck" size={16} className="ds-icon" />
-          Delay tracked
-        </span>
-        <span className="pickup-chip pickup-chip--info">
-          <Icon name="timer" size={16} className="ds-icon" />
-          60 min free wait
-        </span>
-      </div>
+      {!minimal && (
+        <div className="pickup-flight-summary__chips">
+          <span className="pickup-chip pickup-chip--success">
+            <Icon name="shieldCheck" size={16} className="ds-icon" />
+            Delay tracked
+          </span>
+          <span className="pickup-chip pickup-chip--info">
+            <Icon name="timer" size={16} className="ds-icon" />
+            60 min free wait
+          </span>
+        </div>
+      )}
     </div>
   )
 }

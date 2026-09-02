@@ -1,11 +1,54 @@
 import { Button, Navbar, Separator, Stepper, Tag, WidgetField } from 'design-system'
 import { Icon } from './icons'
 import { UPCOMING } from './data'
+import { useLang, useT, useTheme } from '../i18n.jsx'
 import flynasLogo from '../assets/flynas-logo.svg'
-import heroImg from '../assets/rides-hero.png'
+import heroLightEn from '../assets/headerimg-light-en.png'
+import heroDarkEn from '../assets/headerimg-dark-en.png'
+import heroLightAr from '../assets/headerimg-light-ar.png'
+import heroDarkAr from '../assets/headerimg-dark-ar.png'
 import hotelThumb from '../assets/hotel-thumb.jpg'
 
+// (theme, lang) → hero art. Four dedicated PNGs mean dark mode no longer
+// leans on a CSS `filter: brightness()` hack; each combination has its own
+// composition tuned to the direction the copy reads in.
+const HEROES = {
+  'light-en': heroLightEn,
+  'dark-en': heroDarkEn,
+  'light-ar': heroLightAr,
+  'dark-ar': heroDarkAr,
+}
+
 function UpcomingCard({ booking, onBook }) {
+  const t = useT()
+  // Look up the booking's copy through the dict — missing keys fall back to
+  // the field on the raw data, so any card that hasn't been localised still
+  // renders (in English) rather than blanking.
+  const title =
+    booking.kind === 'stay'
+      ? t(`rides.upcoming.${booking.id}.title`) || booking.title
+      : null
+  const line2 =
+    t(`rides.upcoming.${booking.id}.line2`) === `rides.upcoming.${booking.id}.line2`
+      ? booking.line2
+      : t(`rides.upcoming.${booking.id}.line2`)
+  const line3 =
+    t(`rides.upcoming.${booking.id}.line3`) === `rides.upcoming.${booking.id}.line3`
+      ? booking.line3
+      : t(`rides.upcoming.${booking.id}.line3`)
+  const routeFrom =
+    booking.kind === 'flight'
+      ? t(`rides.upcoming.route.${booking.route[0]}`) === `rides.upcoming.route.${booking.route[0]}`
+        ? booking.route[0]
+        : t(`rides.upcoming.route.${booking.route[0]}`)
+      : null
+  const routeTo =
+    booking.kind === 'flight'
+      ? t(`rides.upcoming.route.${booking.route[1]}`) === `rides.upcoming.route.${booking.route[1]}`
+        ? booking.route[1]
+        : t(`rides.upcoming.route.${booking.route[1]}`)
+      : null
+
   return (
     <article className="upcoming-card">
       <div className="upcoming-card__row">
@@ -18,20 +61,23 @@ function UpcomingCard({ booking, onBook }) {
         <div className="upcoming-card__body">
           {booking.kind === 'flight' ? (
             <h3 className="upcoming-card__route">
-              <span>{booking.route[0]}</span>
+              <span>{routeFrom}</span>
               <Icon name="airplaneTilt" size={16} className="ds-icon" />
-              <span>{booking.route[1]}</span>
+              <span>{routeTo}</span>
             </h3>
           ) : (
-            <h3 className="upcoming-card__title">{booking.title}</h3>
+            <h3 className="upcoming-card__title">{title}</h3>
           )}
-          <p className="upcoming-card__meta">{booking.line2}</p>
-          <p className="upcoming-card__meta">{booking.line3}</p>
+          {/* `dir="auto"` picks direction from the first strong character —
+              numeric-heavy strings stay LTR inside an RTL card, translated
+              Arabic strings render RTL correctly. */}
+          <p className="upcoming-card__meta" dir="auto">{line2}</p>
+          <p className="upcoming-card__meta" dir="auto">{line3}</p>
         </div>
       </div>
 
       <button type="button" className="upcoming-card__link" onClick={onBook}>
-        Book a ride
+        {t('rides.home.bookARide')}
         <Icon name="chevronRight" size={16} className="ds-icon" />
       </button>
     </article>
@@ -52,31 +98,35 @@ export function RidesHome({
   onSearch,
   inert,
 }) {
+  const t = useT()
+  const lang = useLang()
+  const theme = useTheme()
+  const heroSrc = HEROES[`${theme}-${lang}`] ?? HEROES['light-en']
   return (
     // Inert behind an open sheet, so the fields underneath it can't be tabbed to.
     <div className="rides-home" inert={inert}>
       <div className="rides-home__hero">
-        <img className="rides-home__hero-img" src={heroImg} alt="" />
+        <img className="rides-home__hero-img" src={heroSrc} alt="" />
       </div>
 
       {/* DS Navbar supplies the iOS status bar + glass back button. */}
-      <Navbar toolbar={{ variant: 'default', title: 'Rides', onBack }} />
+      <Navbar toolbar={{ variant: 'default', title: t('rides.home.title'), onBack }} />
 
       <header className="rides-home__intro">
         <div className="rides-home__headline">
-          <h1>Rides for every journey</h1>
-          <Tag label="New" variant="success" style="filled" />
+          <h1>{t('rides.home.headline')}</h1>
+          <Tag label={t('common.new')} variant="success" style="filled" />
         </div>
-        <p className="rides-home__tagline">Airport rides • Within City • Hourly</p>
+        <p className="rides-home__tagline">{t('rides.home.tagline')}</p>
       </header>
 
-      <h2 className="rides-home__section">Book a ride now</h2>
+      <h2 className="rides-home__section">{t('rides.home.bookNow')}</h2>
 
       <div className="rides-home__form">
         <div className="rides-card">
           <WidgetField
             variant={pickup ? 'populated' : 'empty'}
-            label="Pickup location"
+            label={t('rides.home.pickupLocation')}
             value={pickup || undefined}
             /* A tracked flight knows its terminal, so the widget can name the
                kerb the driver will be waiting at rather than just the airport. */
@@ -87,7 +137,7 @@ export function RidesHome({
           <Separator className="rides-card__rule" />
           <WidgetField
             variant={destination ? 'populated' : 'empty'}
-            label="Destination"
+            label={t('rides.home.destination')}
             value={destination || undefined}
             icon={<Icon name="pin" className="ds-icon" />}
             onPress={() => onEditRoute('destination')}
@@ -100,7 +150,7 @@ export function RidesHome({
           <div className="rides-card__tagged">
             <WidgetField
               variant={dateTimeLabel ? 'populated' : 'empty'}
-              label="Pickup date & time"
+              label={t('rides.home.pickupDateTime')}
               value={dateTimeLabel || undefined}
               icon={<Icon name="calendar" className="ds-icon" />}
               onPress={onEditDateTime}
@@ -121,7 +171,7 @@ export function RidesHome({
               above it and uses the darker default icon colour. */}
           <div className="passengers">
             <Icon name="usersTwo" className="ds-icon passengers__icon" />
-            <span className="passengers__label">Passengers</span>
+            <span className="passengers__label">{t('rides.home.passengers')}</span>
             <Stepper
               value={passengers}
               min={1}
@@ -131,13 +181,13 @@ export function RidesHome({
           </div>
         </div>
 
-        <Button variant="primary" label="Search cars" onClick={onSearch} />
+        <Button variant="primary" label={t('rides.home.searchCars')} onClick={onSearch} />
       </div>
 
       <section className="rides-home__upcoming">
         <div className="rides-home__eyebrow">
           <span className="rides-home__dot" aria-hidden="true" />
-          <span className="eyebrow">for your upcoming Bookings</span>
+          <span className="eyebrow">{t('rides.home.upcoming')}</span>
         </div>
         <div className="rides-home__cards">
           {UPCOMING.map((booking) => (

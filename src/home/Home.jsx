@@ -2,17 +2,23 @@ import { useCallback, useState } from 'react'
 import { AlmosaferLogo, GlassButton, Snackbar, Tag, TabBar } from 'design-system'
 import { DEALS, PRODUCTS, SERVICES, TABS } from './data'
 import { Icon } from './icons'
+import { useT } from '../i18n.jsx'
 import './home.css'
 
 /** One of the four funnel entry tiles. */
-function ProductTile({ product, onOpen }) {
+function ProductTile({ product, label, onOpen }) {
+  const t = useT()
   return (
     <button type="button" className="product-tile" onClick={onOpen}>
       <img className="product-tile__icon" src={product.icon} alt="" />
-      <span className="product-tile__label">{product.label}</span>
+      <span className="product-tile__label">{label}</span>
       {product.tag && (
         <span className="product-tile__tag">
-          <Tag label={product.tag} variant="success" style="filled" />
+          <Tag
+            label={product.tag === 'New' ? t('common.new') : product.tag}
+            variant="success"
+            style="filled"
+          />
         </span>
       )}
     </button>
@@ -20,18 +26,19 @@ function ProductTile({ product, onOpen }) {
 }
 
 /** One entry on the secondary services shelf. */
-function ServiceTile({ service, onOpen }) {
+function ServiceTile({ service, label, onOpen }) {
   return (
     <button type="button" className="service-tile" onClick={onOpen}>
       <span className="service-tile__disc">
         <img className="service-tile__icon" src={service.icon} alt="" />
       </span>
-      <span className="service-tile__label">{service.label}</span>
+      <span className="service-tile__label">{label}</span>
     </button>
   )
 }
 
 function DealCard({ deal, onOpen, onCopy }) {
+  const t = useT()
   return (
     <article className="deal">
       <button type="button" className="deal__image" onClick={onOpen}>
@@ -53,7 +60,7 @@ function DealCard({ deal, onOpen, onCopy }) {
           onClick={() => onCopy(deal.code)}
         >
           <span className="deal__coupon-text">
-            Code: <b>{deal.code}</b>
+            {t('home.dealCode')} <b>{deal.code}</b>
           </span>
           <Icon name="copy" className="ds-icon deal__copy" />
         </button>
@@ -70,6 +77,7 @@ function DealCard({ deal, onOpen, onCopy }) {
  * read as real while the remaining flows are added one at a time.
  */
 export function Home({ onOpenProduct, onOpenService }) {
+  const t = useT()
   const [tab, setTab] = useState(0)
   const [toast, setToast] = useState('')
 
@@ -77,13 +85,17 @@ export function Home({ onOpenProduct, onOpenService }) {
   // identity, so this has to be stable across renders.
   const dismissToast = useCallback(() => setToast(''), [])
 
-  const open = (handler, item) => {
-    if (!handler?.(item)) setToast(`${item.label} is coming soon`)
+  const productLabel = (product) => t(`home.product.${product.id}`)
+  const serviceLabel = (service) => t(`home.service.${service.id}`)
+  const tabLabel = (tab) => t(`home.tab.${tab.id}`)
+
+  const open = (handler, item, label) => {
+    if (!handler?.(item)) setToast(`${label} ${t('home.comingSoon')}`)
   }
 
   const copyCode = (code) => {
     navigator.clipboard?.writeText(code)
-    setToast(`Code ${code} copied`)
+    setToast(`${t('home.dealCode')} ${code} ${t('home.copied')}`)
   }
 
   return (
@@ -96,8 +108,8 @@ export function Home({ onOpenProduct, onOpenService }) {
           <GlassButton
             bg="primary"
             type="label"
-            label="Sign up"
-            onClick={() => setToast('Sign up is coming soon')}
+            label={t('home.signUp')}
+            onClick={() => setToast(`${t('home.signUp')} ${t('home.comingSoon')}`)}
           />
         </header>
 
@@ -106,7 +118,8 @@ export function Home({ onOpenProduct, onOpenService }) {
             <ProductTile
               key={product.id}
               product={product}
-              onOpen={() => open(onOpenProduct, product)}
+              label={productLabel(product)}
+              onOpen={() => open(onOpenProduct, product, productLabel(product))}
             />
           ))}
         </nav>
@@ -116,20 +129,21 @@ export function Home({ onOpenProduct, onOpenService }) {
             <ServiceTile
               key={service.id}
               service={service}
-              onOpen={() => open(onOpenService, service)}
+              label={serviceLabel(service)}
+              onOpen={() => open(onOpenService, service, serviceLabel(service))}
             />
           ))}
         </nav>
 
         <section className="home__deals">
           <div className="home__section-title">
-            <h2>Special deals and offers</h2>
+            <h2>{t('home.specialDeals')}</h2>
             <button
               type="button"
               className="home__view-all"
-              onClick={() => setToast('All offers is coming soon')}
+              onClick={() => setToast(`${t('home.viewAll')} ${t('home.comingSoon')}`)}
             >
-              View all
+              {t('home.viewAll')}
             </button>
           </div>
 
@@ -138,7 +152,7 @@ export function Home({ onOpenProduct, onOpenService }) {
               <DealCard
                 key={deal.id}
                 deal={deal}
-                onOpen={() => setToast(`${deal.title} — offer details coming soon`)}
+                onOpen={() => setToast(`${deal.title} — ${t('home.offerDetails')}`)}
                 onCopy={copyCode}
               />
             ))}
@@ -150,16 +164,16 @@ export function Home({ onOpenProduct, onOpenService }) {
           content instead of scrolling away with it. */}
       <div className="home__tabbar">
         <TabBar
-          items={TABS.map((t) => ({
-            icon: <Icon name={t.icon} className="ds-icon" />,
-            label: t.label,
+          items={TABS.map((tabItem) => ({
+            icon: <Icon name={tabItem.icon} className="ds-icon" />,
+            label: tabLabel(tabItem),
           }))}
           value={tab}
           onChange={(next) => {
             // Home is the only destination built so far, so the selection stays
             // put rather than highlighting a tab with nothing behind it.
             if (next === 0) setTab(next)
-            else setToast(`${TABS[next].label} is coming soon`)
+            else setToast(`${tabLabel(TABS[next])} ${t('home.comingSoon')}`)
           }}
         />
       </div>

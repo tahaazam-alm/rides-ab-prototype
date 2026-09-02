@@ -1,0 +1,219 @@
+/* iOS-Debug-style first-run screen. Dark by default (matches the reference),
+   flips with the app-wide theme once the traveller picks. Every value is a
+   design-system token so both themes work without a second CSS file. */
+
+.landing {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--background-base-default);
+  font-family: var(--type-body-regular-family);
+  color: var(--text-base-default);
+}
+
+/* Fills the viewport top-to-bottom without scroll — the padding + section
+   gaps below are sized to add up to a shorter total than a typical mobile
+   canvas, so nothing needs to slide off the edge. */
+.landing__inner {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-lg);
+  padding: var(--space-lg) var(--space-lg);
+  min-height: 0;
+}
+
+/* ---------- Brand ---------- */
+
+.landing__brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+  text-align: center;
+}
+
+/* Soft aqua aura behind the app icon, so the tile lifts off a dark surface
+   the way an iOS icon does on the home screen. Fully transparent on white
+   backgrounds where the halo would just read as a smudge. */
+.landing__icon {
+  position: relative;
+  padding: var(--space-sm);
+}
+
+.landing__icon::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at center,
+    color-mix(in srgb, var(--color-aqua-100) 24%, transparent),
+    transparent 65%
+  );
+  pointer-events: none;
+  z-index: -1;
+}
+
+.landing__name {
+  margin: 0;
+  font-family: var(--type-headline-family);
+  font-size: var(--type-headline-size);
+  font-weight: var(--type-headline-weight);
+  line-height: var(--type-headline-lh);
+  letter-spacing: var(--type-headline-ls);
+  color: var(--text-base-default);
+}
+
+.landing__tagline {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+}
+
+.landing__tagline p {
+  margin: 0;
+  font-family: var(--type-caption-regular-family);
+  font-size: var(--type-caption-size);
+  line-height: var(--type-caption-lh);
+  color: var(--text-base-subtext);
+}
+
+/* ---------- Sections ---------- */
+
+.landing__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+/* Bilingual, centred label above each group — matches the reference's
+   "Appearance / المظهر" pattern. Caption weight so it reads as a hint
+   rather than as a heading competing with the app name. */
+.landing__section-label {
+  margin: 0;
+  padding-inline: var(--space-sm);
+  font-family: var(--type-caption-regular-family);
+  font-size: var(--type-caption-size);
+  line-height: var(--type-caption-lh);
+  color: var(--text-base-subtext);
+  text-align: center;
+}
+
+.landing__options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+/* Pinned to the bottom of the inner flex column — with `margin-block-start:
+   auto` any unused vertical space collects above the CTA so it stays on the
+   safe-area edge on a taller canvas without adding a rule/shadow. */
+.landing__actions {
+  margin-block-start: auto;
+}
+
+/* Stretches the DS Button across the row — the Button is naturally
+   content-sized (pill hugs the label), so we widen it here rather than
+   introducing a new prop on the shared component. */
+.landing__actions .btn {
+  width: 100%;
+}
+
+/* ---------- Option cards ---------- */
+
+.landing-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid transparent;
+  border-radius: var(--rounded);
+  background: var(--background-base-subtle);
+  color: var(--text-base-default);
+  text-align: start;
+  cursor: pointer;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+.landing-card:not(.landing-card--disabled):hover {
+  background: var(--background-base-hover);
+}
+
+.landing-card--selected {
+  border-color: var(--border-secondary-default);
+}
+
+.landing-card--disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.landing-card__leading {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Flags carry their own colour and cropping — clip to a circle so they read
+   as country badges next to the label. */
+.landing__flag {
+  display: block;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--rounded-full);
+  object-fit: cover;
+}
+
+.landing-card__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.landing-card__title {
+  font-family: var(--type-subtitle-family);
+  font-size: var(--type-subtitle-size);
+  font-weight: var(--type-subtitle-bold-weight);
+  line-height: var(--type-subtitle-lh);
+  color: var(--text-base-default);
+}
+
+.landing-card__subtitle {
+  font-family: var(--type-caption-regular-family);
+  font-size: var(--type-caption-size);
+  line-height: var(--type-caption-lh);
+  color: var(--text-base-subtext);
+}
+
+.landing-card__trailing {
+  flex: none;
+  display: flex;
+  align-items: center;
+}
+
+/* Radio ring — grey circle when idle, aqua fill with an inset "ring" for
+   the dot when selected. Built inline (rather than reusing DS Radio) so
+   it can sit on the trailing edge of the card, which the DS Radio's own
+   markup doesn't accommodate. */
+.landing-card__radio {
+  display: block;
+  width: 24px;
+  height: 24px;
+  border: 1.5px solid var(--border-base-default);
+  border-radius: var(--rounded-full);
+  background: transparent;
+  transition: background-color 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+
+.landing-card__radio--selected {
+  border-color: var(--background-primary-default);
+  background: var(--background-primary-default);
+  box-shadow: inset 0 0 0 5px var(--background-base-subtle);
+}

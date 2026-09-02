@@ -15,6 +15,7 @@ import airplaneTilt from '@ds-icons/line-icons/airplaneTilt.svg?raw'
 import target from '@ds-icons/line-icons/target.svg?raw'
 import timer from '@ds-icons/line-icons/timer.svg?raw'
 import usersTwo from '@ds-icons/line-icons/usersTwo.svg?raw'
+import maginfyingGlass from '@ds-icons/line-icons/maginfyingGlass.svg?raw'
 import mic from '@ds-icons/line-icons/mic.svg?raw'
 import shieldCheck from '@ds-icons/line-icons/shieldCheck.svg?raw'
 import smiley from '@ds-icons/line-icons/smiley.svg?raw'
@@ -54,6 +55,7 @@ const RAW = {
   chevronLeft,
   chevronRight,
   infoCircle,
+  maginfyingGlass,
   pin,
   target,
   timer,

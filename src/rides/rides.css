@@ -61,22 +61,10 @@
   mask-image: linear-gradient(to bottom, #000 78%, transparent 90%);
 }
 
-
-
-
-/* The hero is a light studio photo with a white plate. In light mode it fades
-   into the white page, but in dark mode that plate would leave the headline and
-   "Book a ride now" white-on-white, so darken it into the page instead.
-   Declared for both dark signals: the explicit toggle and the system setting. */
-:root[data-theme='dark'] .rides-home__hero-img {
-  filter: brightness(0.36) saturate(1.15);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) .rides-home__hero-img {
-    filter: brightness(0.36) saturate(1.15);
-  }
-}
+/* Four dedicated hero PNGs (light-en, dark-en, light-ar, dark-ar) — the
+   src is chosen in JS from the theme + lang contexts, so the CSS no longer
+   needs the old `filter: brightness()` hack that used to fake a dark
+   version of a single light-mode photo. */
 
 .rides-home__intro {
   position: relative;
@@ -236,6 +224,14 @@
   color: var(--text-base-default);
 }
 
+/* The DS Stepper writes dir="ltr" on its own root, which locks its flex flow
+   even inside an RTL app — so a `dir="rtl"` prop reorders the DOM without
+   changing what the eye sees. Flip visually via flex-direction on the row
+   itself, scoped to the passengers stepper so other Steppers are unaffected. */
+[dir='rtl'] .passengers .stepper {
+  flex-direction: row-reverse;
+}
+
 /* ---------- Upcoming bookings ---------- */
 
 .rides-home__upcoming {
@@ -243,7 +239,8 @@
   display: flex;
   flex-direction: column;
   gap: var(--space);
-  padding: var(--space-xl) 0 0 var(--space);
+  padding-block-start: var(--space-xl);
+  padding-inline-start: var(--space);
 }
 
 .rides-home__eyebrow {
@@ -1452,10 +1449,13 @@
   inset-block-end: 9px;
 }
 
-.review-trip__legs {
+/* Itinerary block wraps the pickup-time row and the From→To route so their
+   internal spacing is consistent — 20px between the time row and the route
+   (per the frame), and the route rows share their own tighter rhythm below. */
+.review-trip__itinerary {
   display: flex;
   flex-direction: column;
-  gap: var(--space-md);
+  gap: var(--space-lg);
 }
 
 .review-leg {
@@ -1466,16 +1466,19 @@
 
 .review-leg__icon {
   color: var(--icon-base-subtle);
+  flex: none;
 }
 
 .review-leg__body {
+  flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-xs);
+  gap: var(--space-2xs);
 }
 
 .review-leg__label,
+.review-leg__address,
 .review-leg__detail {
   margin: 0;
   font-family: var(--type-caption-regular-family);
@@ -1487,20 +1490,51 @@
   color: var(--text-base-subtext);
 }
 
+.review-leg__address,
 .review-leg__detail {
-  color: var(--text-base-default);
+  color: var(--text-base-subtext);
 }
 
-.review-leg__place {
+.review-leg__place,
+.review-leg__value {
   margin: 0;
-  overflow: hidden;
   font-family: var(--type-body-semibold-family);
   font-size: var(--type-body-size);
   font-weight: var(--type-body-semibold-weight);
   line-height: var(--type-body-lh);
   color: var(--text-base-default);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+}
+
+/* The tracking tag rides on the top-right of the pickup-time row — its
+   `Tracking SV 202` tag lifts to the row's baseline so the plane glyph
+   lines up optically with the label above the date. */
+.review-leg--time {
+  align-items: center;
+}
+
+.review-leg__track {
+  flex: none;
+  margin-inline-start: auto;
+}
+
+/* From → To route rows sit inside a dashed vertical connector, matching the
+   home widget's route card. The connector runs between the two 24px icons —
+   from just below the "From" icon to just above the "To" icon. */
+.review-trip__route {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space);
+}
+
+.review-trip__connector {
+  position: absolute;
+  inset-inline-start: 11px;
+  inset-block-start: 30px;
+  width: 0;
+  height: calc(100% - 60px);
+  border-inline-start: 1px dashed var(--border-base-default);
+  pointer-events: none;
 }
 
 /* A text link, which the design system has no Button variant for. */
@@ -2163,6 +2197,14 @@
   color: var(--text-base-default);
 }
 
+/* The DS `planeLine` glyph points right, which reads as "flight goes rightward"
+   in LTR. In RTL the origin is on the right and destination on the left, so the
+   plane should point left — mirror the icon (the icon only, per DS guidance
+   against scaling whole components). */
+[dir='rtl'] .flight-card__route .ds-icon {
+  transform: scaleX(-1);
+}
+
 .flight-card__times,
 .flight-card__airline {
   font-family: var(--type-caption-regular-family);
@@ -2193,6 +2235,33 @@
   inset-inline-end: var(--space-md);
   inset-block-end: var(--space-md);
   color: var(--icon-secondary-default);
+}
+
+/* Pre-query empty state — magnifier + one-line prompt, centered in the sheet
+   body. Sits inside `.sheet__results--flights` which is a scrollable column,
+   so the block takes flex:1 to fill the remaining height and centre itself. */
+.flight-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md);
+  padding: var(--space-xl) var(--space);
+  min-height: 200px;
+}
+
+.flight-empty__icon {
+  color: var(--icon-base-default);
+}
+
+.flight-empty__caption {
+  margin: 0;
+  font-family: var(--type-body-regular-family);
+  font-size: var(--type-body-size);
+  line-height: var(--type-body-lh);
+  color: var(--text-base-subtext);
+  text-align: center;
 }
 
 /* ---------- Tracking tag on the home widget ---------- */
@@ -2676,4 +2745,153 @@
 .pickup-chip--info {
   background: var(--background-primary-subtle);
   color: var(--text-link-default);
+}
+
+/* ============================================================
+   v2 — flight prompt sheet (after car selection)
+   ============================================================ */
+
+/* Rides inside a medium DS BottomSheet whose header renders only the grabber.
+   Content stacks: illustration, title, benefits list, tappable search field,
+   Skip link. Padding matches the DS sheet's default gutters (16px sides). */
+.flight-prompt {
+  display: flex;
+  flex-direction: column;
+  padding: 0 var(--space) var(--space-lg);
+  gap: var(--space);
+  align-items: stretch;
+}
+
+.flight-prompt__illustration {
+  position: relative;
+  align-self: center;
+  width: 80px;
+  height: 80px;
+  margin-block-start: var(--space-sm);
+}
+
+/* Both art versions live in the DOM so a theme flip is a pure CSS toggle —
+   no JS round-trip through the theme state. The stacked positioning keeps
+   the illustration on the same 80×80 footprint. */
+.flight-prompt__illustration-art {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Light is the default. Dark takes over when the app is in dark mode —
+   either explicitly (`data-theme='dark'`) or via the system when no
+   explicit theme is set. */
+.flight-prompt__illustration-art--dark {
+  display: none;
+}
+
+:root[data-theme='dark'] .flight-prompt__illustration-art--light {
+  display: none;
+}
+
+:root[data-theme='dark'] .flight-prompt__illustration-art--dark {
+  display: block;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .flight-prompt__illustration-art--light {
+    display: none;
+  }
+
+  :root:not([data-theme='light']) .flight-prompt__illustration-art--dark {
+    display: block;
+  }
+}
+
+.flight-prompt__title {
+  margin: 0;
+  font-family: var(--type-title-family);
+  font-size: var(--type-title-size);
+  font-weight: var(--type-title-bold-weight);
+  line-height: var(--type-title-lh);
+  letter-spacing: var(--type-title-ls);
+  color: var(--text-base-default);
+  text-align: center;
+}
+
+.flight-prompt__benefits {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.flight-prompt__benefit {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  font-family: var(--type-body-regular-family);
+  font-size: var(--type-body-size);
+  line-height: var(--type-body-lh);
+  color: var(--text-base-default);
+}
+
+.flight-prompt__benefit-icon {
+  flex: none;
+  color: var(--icon-secondary-default);
+  margin-block-start: 2px;
+}
+
+/* Tappable stand-in for the flight-search field. Bordered pill matching the
+   DS Search look; tapping hands off to the fullscreen flight search sheet
+   (with its own real input + keyboard). */
+.flight-prompt__search {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--border-base-default);
+  border-radius: var(--rounded-full);
+  background: var(--background-base-default);
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.flight-prompt__search:active {
+  background: var(--background-base-hover);
+}
+
+.flight-prompt__search-icon {
+  flex: none;
+  color: var(--icon-base-subtle);
+}
+
+.flight-prompt__search-placeholder {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--type-body-regular-family);
+  font-size: var(--type-body-size);
+  line-height: var(--type-body-lh);
+  color: var(--text-base-subtext);
+  text-align: start;
+}
+
+/* Text link, not a Button — Skip is a de-emphasised alternative to picking
+   a flight, so it reads as a secondary action rather than a competing CTA. */
+.flight-prompt__skip {
+  align-self: center;
+  padding: var(--space-sm) var(--space);
+  border: none;
+  background: none;
+  font-family: var(--type-body-semibold-family);
+  font-size: var(--type-body-size);
+  font-weight: var(--type-body-semibold-weight);
+  line-height: var(--type-body-lh);
+  color: var(--text-link-default);
+  cursor: pointer;
+}
+
+.flight-prompt__skip:active {
+  color: var(--text-link-pressed);
 }

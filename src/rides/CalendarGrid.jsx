@@ -1,5 +1,6 @@
 import { Icon } from './icons'
-import { MONTHS, TODAY, WEEKDAYS } from './data'
+import { TODAY } from './data'
+import { useCalendarLabels } from '../i18n.jsx'
 
 const isSameDay = (a, b) =>
   !!a && !!b && a.year === b.year && a.month === b.month && a.day === b.day
@@ -8,6 +9,7 @@ const isSameDay = (a, b) =>
 const ordinal = ({ year, month, day }) => year * 10000 + month * 100 + day
 
 export function CalendarGrid({ view, selected, onSelect, onViewChange }) {
+  const { months, weekdays } = useCalendarLabels()
   const { year, month } = view
   const firstWeekday = new Date(year, month, 1).getDay()
   const daysInMonth = new Date(year, month + 1, 0).getDate()
@@ -31,7 +33,7 @@ export function CalendarGrid({ view, selected, onSelect, onViewChange }) {
     <div className="calendar">
       <div className="calendar__head">
         <p className="calendar__month">
-          <span className="calendar__month-name">{MONTHS[month]}</span>
+          <span className="calendar__month-name">{months[month]}</span>
           <span className="calendar__year">{year}</span>
         </p>
         <button
@@ -55,7 +57,7 @@ export function CalendarGrid({ view, selected, onSelect, onViewChange }) {
       <table className="calendar__table">
         <thead>
           <tr>
-            {WEEKDAYS.map((d) => (
+            {weekdays.map((d) => (
               <th key={d} scope="col" className="calendar__weekday">
                 {d}
               </th>
