@@ -41,6 +41,11 @@ function App() {
   // first-run (no screen underneath) and close falls back to 'home' so the app
   // is still useable if the picker is dismissed.
   const [previousScreen, setPreviousScreen] = useState(null)
+  // Bumped every time the reviewer starts a fresh prototype run (Landing's
+  // primary CTA), which keys Home and RidesFlow so they remount from clean
+  // state — any pickup / destination / date / time / flight the previous run
+  // left behind is dropped, so the demo always begins from empty.
+  const [session, setSession] = useState(0)
   const [ridesVisited, setRidesVisited] = useState(false)
   const [variant, setVariant] = useState(() => initialArm('variant', ['v1', 'v2']))
   // Only 'en' is wired today; the Landing offers 'ar' behind a Coming-soon
@@ -55,19 +60,26 @@ function App() {
     document.documentElement.setAttribute('data-theme', theme)
   }, [theme])
 
+  // Shared "open the settings panel" — used by both the three-finger tap and
+  // the debugger button below. Guards against re-triggering when Landing is
+  // already open so extra fingers / double-clicks don't clobber the saved
+  // previousScreen.
+  const openLanding = () => {
+    setScreen((current) => {
+      if (current === 'landing') return current
+      setPreviousScreen(current)
+      return 'landing'
+    })
+  }
+
   // Three-finger tap anywhere in the app re-opens the Landing so a reviewer
   // can switch variant / language / theme mid-session without a hard reload.
   // touchstart fires per finger going down; the `>= 3` check catches the
-  // moment the third finger lands, and we no-op when Landing is already open
-  // so the setter isn't triggered on every extra touch after that.
+  // moment the third finger lands.
   useEffect(() => {
     const onTouchStart = (e) => {
       if (e.touches.length < 3) return
-      setScreen((current) => {
-        if (current === 'landing') return current
-        setPreviousScreen(current)
-        return 'landing'
-      })
+      openLanding()
     }
     document.addEventListener('touchstart', onTouchStart, { passive: true })
     return () => document.removeEventListener('touchstart', onTouchStart)
@@ -106,25 +118,60 @@ function App() {
               theme={theme}
               onThemeChange={setTheme}
               onContinue={() => {
-                setScreen('home')
+                // Fresh run: drop any state left behind by the last session by
+                // bumping the key on the funnels below and forcing Rides back
+                // to its unvisited state. `previousScreen` is cleared so a
+                // later triple-tap → close doesn't try to restore the stale
+                // Rides screen.
+                setSession((n) => n + 1)
+                setRidesVisited(false)
                 setPreviousScreen(null)
+                setScreen('home')
               }}
               onClose={closeLanding}
             />
           )}
 
           <div hidden={screen !== 'home'}>
-            <Home onOpenProduct={openProduct} />
+            <Home key={`home-${session}`} onOpenProduct={openProduct} />
           </div>
 
           {ridesVisited && (
             <div hidden={screen !== 'rides'}>
               <RidesFlow
+                key={`rides-${session}`}
                 variant={variant}
                 onVariantChange={setVariant}
                 onExit={() => setScreen('home')}
               />
             </div>
+          )}
+
+          {/* iOS-Debug-style prototype settings shortcut. Rendered only on the
+              home screen (the app's default resting state), tap opens the
+              Landing panel — the same door as the three-finger tap gesture,
+              but visible for reviewers on desktop or in a preview iframe
+              where multi-touch isn't available. */}
+          {screen === 'home' && (
+            <button
+              type="button"
+              className="debug-btn"
+              onClick={openLanding}
+              aria-label="Prototype settings"
+              title="Prototype settings"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M4 6h12M4 12h16M4 18h10"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+                <circle cx="18" cy="6" r="2.4" fill="currentColor" />
+                <circle cx="6" cy="12" r="2.4" fill="currentColor" />
+                <circle cx="16" cy="18" r="2.4" fill="currentColor" />
+              </svg>
+            </button>
           )}
           </div>
         </DesignSystemProvider>
