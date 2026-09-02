@@ -9,8 +9,10 @@ const ITEM_HEIGHT = 28
 /**
  * One scroll-snapping column of the picker. Figma flattens the iOS wheel to a
  * bitmap, so this is a real control built from tokens instead of that image.
+ * `kind` seeds a modifier class the CSS uses to reorder columns in RTL (see
+ * `.wheel` rules) without touching JSX or React state.
  */
-function Column({ items, value, onChange, format = (v) => v, label }) {
+function Column({ items, value, onChange, format = (v) => v, label, kind }) {
   const ref = useRef(null)
   const settle = useRef(null)
 
@@ -39,7 +41,7 @@ function Column({ items, value, onChange, format = (v) => v, label }) {
 
   return (
     <div
-      className="wheel__column"
+      className={`wheel__column${kind ? ` wheel__column--${kind}` : ''}`}
       ref={ref}
       onScroll={handleScroll}
       role="listbox"
@@ -65,16 +67,22 @@ function Column({ items, value, onChange, format = (v) => v, label }) {
 }
 
 export function TimeWheel({ time, onChange }) {
+  // DOM order is always [hour, minute, meridiem]. The RTL layout is done
+  // purely in CSS with `order` on the modifier classes below — so this file
+  // doesn't need to read the language, and the reorder can't be broken by a
+  // missing context provider.
   return (
     <div className="wheel">
       <div className="wheel__selection" aria-hidden="true" />
       <Column
+        kind="hour"
         label="Hour"
         items={HOURS}
         value={time.hour}
         onChange={(hour) => onChange({ ...time, hour })}
       />
       <Column
+        kind="minute"
         label="Minute"
         items={MINUTES}
         value={time.minute}
@@ -82,6 +90,7 @@ export function TimeWheel({ time, onChange }) {
         onChange={(minute) => onChange({ ...time, minute })}
       />
       <Column
+        kind="meridiem"
         label="AM or PM"
         items={MERIDIEMS}
         value={time.meridiem}

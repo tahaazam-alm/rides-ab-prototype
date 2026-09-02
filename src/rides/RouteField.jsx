@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { Icon } from './icons'
+import { useIsMobile } from './useIsMobile'
 
 /**
  * Editable route field. WidgetField is a button that opens a picker, so it
@@ -17,6 +18,7 @@ export function RouteField({
   onClear,
 }) {
   const ref = useRef(null)
+  const isMobile = useIsMobile()
   // Empty cell: the label drops into the placeholder position and is the only
   // text, matching WidgetField's `empty` variant. Once there is a value it rises
   // to the 12px caption line above it.
@@ -52,9 +54,11 @@ export function RouteField({
           placeholder={populated ? undefined : label}
           aria-label={label}
           autoComplete="off"
-          /* The on-screen keyboard below is the input surface, so suppress the
-             device's own keyboard and keep both previews identical. */
-          inputMode="none"
+          /* On desktop the in-app on-screen keyboard is the input surface, so
+             suppress the device's own keyboard and keep both previews
+             identical. On mobile the browser's native keyboard is what the
+             traveller expects, so let it open. */
+          inputMode={isMobile ? undefined : 'none'}
           onFocus={() => onFocus(id)}
           onChange={(e) => onChange(id, e.target.value)}
         />

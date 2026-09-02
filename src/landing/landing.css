@@ -13,6 +13,34 @@
   color: var(--text-base-default);
 }
 
+/* Dismiss chip — only rendered when Landing has been re-opened mid-session
+   (App passes `onClose`). Trailing-edge 32px circle so it sits over the
+   brand block without shifting layout, and mirrors edge in RTL via a logical
+   inset. Deliberately borderless: this is a debugger affordance, not a
+   navigational back button. */
+.landing__close {
+  position: absolute;
+  top: var(--space);
+  inset-inline-end: var(--space);
+  z-index: 2;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: var(--rounded-full);
+  background: var(--background-base-subtle);
+  color: var(--icon-base-default);
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.landing__close:active {
+  background: var(--background-base-hover);
+}
+
 /* Fills the viewport top-to-bottom without scroll — the padding + section
    gaps below are sized to add up to a shorter total than a typical mobile
    canvas, so nothing needs to slide off the edge. */

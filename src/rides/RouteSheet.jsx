@@ -4,6 +4,7 @@ import { Icon } from './icons'
 import { Keyboard } from './Keyboard'
 import { RouteField } from './RouteField'
 import { searchPlaces } from './data'
+import { useIsMobile } from './useIsMobile'
 import { useT } from '../i18n.jsx'
 
 export function RouteSheet({
@@ -18,6 +19,7 @@ export function RouteSheet({
   onPickSuggestion,
 }) {
   const t = useT()
+  const isMobile = useIsMobile()
   // `focused` keeps naming the field being edited even after the keyboard is
   // dismissed, so the results list stays put instead of resetting. It also
   // narrows the pool — pickup only shows airports, destination shows the
@@ -99,7 +101,11 @@ export function RouteSheet({
         )}
       </div>
 
-      {keyboardOpen && (
+      {/* On mobile the OS keyboard is the input surface, so we skip our own
+          fake keyboard. `keyboardOpen` still gates the field's `active`
+          styling above via the sheet's props, so the caret + clear affordance
+          still track focus correctly. */}
+      {keyboardOpen && !isMobile && (
         <Keyboard
           suggestions={wordSuggestions}
           empty={query.length === 0}

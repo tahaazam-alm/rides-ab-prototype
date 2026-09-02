@@ -23,6 +23,7 @@ export function Landing({
   theme,
   onThemeChange,
   onContinue,
+  onClose,
 }) {
   const t = useT()
   // Section labels stay bilingual so the traveller sees both languages while
@@ -33,6 +34,26 @@ export function Landing({
 
   return (
     <div className="landing">
+      {onClose && (
+        // Trailing-edge dismiss for when Landing is re-opened mid-session by
+        // the three-finger tap. Aria-label is bilingual so screen readers
+        // announce it in either configured language.
+        <button
+          type="button"
+          className="landing__close"
+          onClick={onClose}
+          aria-label={t('common.close')}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M6 6l12 12M18 6L6 18"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+          </svg>
+        </button>
+      )}
       <div className="landing__inner">
         <header className="landing__brand">
           <div className="landing__icon">

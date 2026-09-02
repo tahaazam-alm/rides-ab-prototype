@@ -37,6 +37,10 @@ function App() {
   const [screen, setScreen] = useState(
     HAS_VARIANT_PARAM ? 'home' : 'landing',
   ) // 'landing' | 'home' | 'rides'
+  // Where to return to when Landing is closed. `null` means the reviewer is on
+  // first-run (no screen underneath) and close falls back to 'home' so the app
+  // is still useable if the picker is dismissed.
+  const [previousScreen, setPreviousScreen] = useState(null)
   const [ridesVisited, setRidesVisited] = useState(false)
   const [variant, setVariant] = useState(() => initialArm('variant', ['v1', 'v2']))
   // Only 'en' is wired today; the Landing offers 'ar' behind a Coming-soon
@@ -50,6 +54,29 @@ function App() {
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
   }, [theme])
+
+  // Three-finger tap anywhere in the app re-opens the Landing so a reviewer
+  // can switch variant / language / theme mid-session without a hard reload.
+  // touchstart fires per finger going down; the `>= 3` check catches the
+  // moment the third finger lands, and we no-op when Landing is already open
+  // so the setter isn't triggered on every extra touch after that.
+  useEffect(() => {
+    const onTouchStart = (e) => {
+      if (e.touches.length < 3) return
+      setScreen((current) => {
+        if (current === 'landing') return current
+        setPreviousScreen(current)
+        return 'landing'
+      })
+    }
+    document.addEventListener('touchstart', onTouchStart, { passive: true })
+    return () => document.removeEventListener('touchstart', onTouchStart)
+  }, [])
+
+  const closeLanding = () => {
+    setScreen(previousScreen ?? 'home')
+    setPreviousScreen(null)
+  }
 
   // Returning `true` tells the homepage the tap was routed somewhere; anything
   // still unbuilt falls through to its "coming soon" toast.
@@ -78,7 +105,11 @@ function App() {
               onLangChange={setLang}
               theme={theme}
               onThemeChange={setTheme}
-              onContinue={() => setScreen('home')}
+              onContinue={() => {
+                setScreen('home')
+                setPreviousScreen(null)
+              }}
+              onClose={closeLanding}
             />
           )}
 

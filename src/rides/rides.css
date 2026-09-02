@@ -598,6 +598,23 @@
   outline: none;
 }
 
+/* Column reorder for RTL — Arabic time reads AM/PM · Hour · Minute (left → right),
+   matching the "PM 12:30" header format. In RTL flex, `flex-direction: row`
+   goes right-to-left, so `order: 1` places an item at the RIGHT edge and
+   higher orders push toward the LEFT edge. Scoped to `[dir='rtl']` so the
+   default LTR layout (Hour · Minute · AM/PM) stays untouched. */
+[dir='rtl'] .wheel__column--minute {
+  order: 1;
+}
+
+[dir='rtl'] .wheel__column--hour {
+  order: 2;
+}
+
+[dir='rtl'] .wheel__column--meridiem {
+  order: 3;
+}
+
 .wheel__column::-webkit-scrollbar {
   display: none;
 }

@@ -4,6 +4,7 @@ import { FlightCard } from './FlightCard'
 import { Icon } from './icons'
 import { Keyboard } from './Keyboard'
 import { searchFlights } from './data'
+import { useIsMobile } from './useIsMobile'
 import { useT } from '../i18n.jsx'
 
 /**
@@ -15,11 +16,18 @@ import { useT } from '../i18n.jsx'
  */
 export function FlightSearchField({ value, onChange, onFocus }) {
   const t = useT()
+  const isMobile = useIsMobile()
   const ref = useRef(null)
 
   useEffect(() => {
-    ref.current?.querySelector('input')?.setAttribute('inputmode', 'none')
-  }, [])
+    // On desktop the in-app on-screen keyboard is the input surface, so
+    // suppress the device's own keyboard. On mobile leave the attribute off
+    // so the native keyboard opens as travellers expect.
+    const input = ref.current?.querySelector('input')
+    if (!input) return
+    if (isMobile) input.removeAttribute('inputmode')
+    else input.setAttribute('inputmode', 'none')
+  }, [isMobile])
 
   return (
     <div ref={ref} onFocus={onFocus}>
@@ -49,6 +57,7 @@ export function FlightSearchSheet({
   onSelect,
 }) {
   const t = useT()
+  const isMobile = useIsMobile()
   const hasQuery = query.trim().length > 0
   const results = searchFlights(query, airport.airport)
 
@@ -136,7 +145,9 @@ export function FlightSearchSheet({
         )}
       </div>
 
-      {keyboardOpen && (
+      {/* On mobile the OS keyboard is the input surface, so we skip our own
+          fake keyboard. `keyboardOpen` still governs focus behaviour above. */}
+      {keyboardOpen && !isMobile && (
         <Keyboard
           suggestions={suggestions}
           empty={query.length === 0}
