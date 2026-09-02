@@ -29,6 +29,22 @@ export function FlightSearchField({ value, onChange, onFocus }) {
     else input.setAttribute('inputmode', 'none')
   }, [isMobile])
 
+  // Autofocus on mount — the sheet mounts as a direct result of the "Track
+  // flight" tap, so the field lands ready to type. onFocus() is fired
+  // explicitly so the desktop visual keyboard opens even if `.focus()` is
+  // preempted by the sheet's slide-in transition. Also nudged inside a
+  // rAF so the input has been laid out before the caret lands.
+  useEffect(() => {
+    const input = ref.current?.querySelector('input')
+    if (!input) return
+    const raf = requestAnimationFrame(() => {
+      input.focus({ preventScroll: true })
+      onFocus?.()
+    })
+    return () => cancelAnimationFrame(raf)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   return (
     <div ref={ref} onFocus={onFocus}>
       <Search
