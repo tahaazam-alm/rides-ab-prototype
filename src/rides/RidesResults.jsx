@@ -53,7 +53,10 @@ export function RidesResults({
       </header>
 
       <div className="rides-results__list">
-        {CARS.map((car) => (
+        {/* Filter by pax so a party of 4/5 doesn't see a 3-seat sedan; the
+            catalogue spans 3 → 10 seats so every realistic party gets at
+            least one match. */}
+        {CARS.filter((car) => car.seats >= passengers).map((car) => (
           <CarCard
             key={car.id}
             car={car}

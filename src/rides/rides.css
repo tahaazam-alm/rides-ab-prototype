@@ -367,6 +367,13 @@
   cursor: pointer;
 }
 
+/* In RTL the "Book a ride →" pill reads better on the trailing edge (left)
+   so the caret points into the natural reading direction and doesn't fight
+   the right-aligned flight body above it. */
+[dir='rtl'] .upcoming-card__link {
+  align-self: flex-end;
+}
+
 /* ---------- Sheets ---------- */
 
 .sheet {
@@ -692,6 +699,16 @@
   min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+}
+
+/* Prevent the direct children of the scrollable region from shrinking to fit
+   a short viewport. Without this, `flex-shrink: 1` (the flex default) lets
+   the date card — and by extension the calendar grid inside its Collapse —
+   compress on short screens, so day rows end up tighter than designed. With
+   `flex-shrink: 0` the cards keep their intrinsic size, and the parent's
+   `overflow-y: auto` handles the overflow with a scroll. */
+.sheet--datetime .sheet__scroll > * {
+  flex-shrink: 0;
 }
 
 .sheet__cta {

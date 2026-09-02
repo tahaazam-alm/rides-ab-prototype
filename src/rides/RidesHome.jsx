@@ -21,6 +21,7 @@ const HEROES = {
 
 function UpcomingCard({ booking, onBook }) {
   const t = useT()
+  const lang = useLang()
   // Look up the booking's copy through the dict — missing keys fall back to
   // the field on the raw data, so any card that hasn't been localised still
   // renders (in English) rather than blanking.
@@ -78,7 +79,13 @@ function UpcomingCard({ booking, onBook }) {
 
       <button type="button" className="upcoming-card__link" onClick={onBook}>
         {t('rides.home.bookARide')}
-        <Icon name="chevronRight" size={16} className="ds-icon" />
+        {/* Direction-aware caret — points forward in the reading direction:
+            "→" in LTR, "←" in RTL. */}
+        <Icon
+          name={lang === 'ar' ? 'chevronLeft' : 'chevronRight'}
+          size={16}
+          className="ds-icon"
+        />
       </button>
     </article>
   )

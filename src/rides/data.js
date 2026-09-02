@@ -26,6 +26,32 @@ export const PLACES = [
     terminal: 'Terminal 1',
   },
   // ---- Destinations (destination pool) ----
+  // Hotels first — the four best-known Dubai stays are the most likely
+  // pickups for a driver assignment, so they anchor the empty-query list.
+  {
+    title: 'Address Downtown',
+    subtitle: 'Hotel · Downtown Dubai · UAE',
+    address: 'Sheikh Mohammed Bin Rashed Boulevard, Downtown, Dubai',
+    distance: '12 km',
+  },
+  {
+    title: 'Bulgari Resort Dubai',
+    subtitle: 'Hotel · Jumeira Bay · Dubai · UAE',
+    address: 'Jumeirah Bay Island, Jumeirah, Dubai',
+    distance: '18 km',
+  },
+  {
+    title: 'Waldorf Astoria Palm Jumeirah',
+    subtitle: 'Hotel · Palm Jumeirah · Dubai · UAE',
+    address: 'Crescent Road, The Palm Jumeirah, Dubai',
+    distance: '27 km',
+  },
+  {
+    title: 'The Ritz-Carlton Dubai',
+    subtitle: 'Hotel · JBR · Dubai · UAE',
+    address: 'The Walk, Jumeirah Beach Residence, Dubai',
+    distance: '29 km',
+  },
   {
     title: 'Burj Khalifa',
     subtitle: 'Downtown Dubai · UAE',
@@ -88,7 +114,10 @@ export const searchPlaces = (query, field) => {
     field === 'pickup'
       ? PLACES.filter((p) => p.airport)
       : PLACES.filter((p) => !p.airport)
-  if (!q) return pool.slice(0, 4)
+  // Empty query shows a curated head of the list — the 4 anchor hotels
+  // followed by the top 3 landmarks, so the sheet feels populated before the
+  // traveller types anything. Pickup still shows every airport (short list).
+  if (!q) return field === 'pickup' ? pool : pool.slice(0, 7)
   return pool.filter((p) =>
     (p.title + ' ' + p.subtitle).toLowerCase().includes(q),
   )
@@ -169,7 +198,9 @@ export const formatCancellation = (date, time, months = MONTHS) => {
 }
 
 // The cars the search returns, matching the Figma results frame. `width` is the
-// rendered width of the vehicle cutout, which differs per body style.
+// rendered width of the vehicle cutout, which differs per body style. `seats`
+// / `bags` are realistic maximums per body style — the results screen filters
+// on `seats >= passengers` so a party of 4 doesn't see a 3-seat sedan.
 export const CARS = [
   {
     id: 'economy-sedan',
@@ -177,10 +208,10 @@ export const CARS = [
     model: 'Toyota Altis or similar',
     image: 'economy',
     width: 164,
-    price: 250,
-    // Figma pairs a "dropped by 10%" badge with a *lower* struck price (230 vs
-    // 250). Kept the badge and set the struck price above it so the two agree.
-    wasPrice: 278,
+    price: 120,
+    // "Dropped by 10%" badge — the struck price is the pre-discount fare so
+    // 120 vs 135 reads as ~11% off, matching the badge.
+    wasPrice: 135,
     promo: 'Price dropped by 10%',
     seats: 3,
     bags: 2,
@@ -189,16 +220,42 @@ export const CARS = [
     childSeat: true,
   },
   {
+    id: 'business-sedan',
+    name: 'Business Sedan',
+    model: 'Mercedes E-Class or similar',
+    image: 'businessSedan',
+    width: 172,
+    price: 165,
+    seats: 3,
+    bags: 3,
+    meetAndGreet: true,
+    arabicSpeakingDriver: true,
+    childSeat: true,
+  },
+  {
     id: 'luxury-sedan',
     name: 'Luxury Sedan',
     model: 'Tesla model Y or similar',
     image: 'luxurySedan',
     width: 165,
-    price: 250,
+    price: 195,
     seats: 3,
     bags: 2,
     meetAndGreet: true,
     arabicSpeakingDriver: true,
+    childSeat: true,
+  },
+  {
+    id: 'economy-suv',
+    name: 'Economy SUV',
+    model: 'Toyota Land Cruiser or similar',
+    image: 'ecoSuv',
+    width: 182,
+    price: 180,
+    seats: 5,
+    bags: 5,
+    meetAndGreet: true,
+    arabicSpeakingDriver: false,
     childSeat: true,
   },
   {
@@ -207,9 +264,48 @@ export const CARS = [
     model: 'GMC Yukon XL or similar',
     image: 'luxurySuv',
     width: 188,
-    price: 320,
-    seats: 5,
+    price: 240,
+    seats: 6,
     bags: 7,
+    meetAndGreet: true,
+    arabicSpeakingDriver: true,
+    childSeat: true,
+  },
+  {
+    id: 'mini-van',
+    name: 'Mini Van',
+    model: 'Toyota Hiace or similar',
+    image: 'miniVan',
+    width: 190,
+    price: 260,
+    seats: 7,
+    bags: 6,
+    meetAndGreet: true,
+    arabicSpeakingDriver: true,
+    childSeat: true,
+  },
+  {
+    id: 'economy-van',
+    name: 'Economy Van',
+    model: 'Hyundai H1 or similar',
+    image: 'ecoVan',
+    width: 194,
+    price: 290,
+    seats: 10,
+    bags: 8,
+    meetAndGreet: true,
+    arabicSpeakingDriver: false,
+    childSeat: false,
+  },
+  {
+    id: 'premium-van',
+    name: 'Premium Van',
+    model: 'Mercedes V-Class or similar',
+    image: 'premiumVan',
+    width: 194,
+    price: 365,
+    seats: 8,
+    bags: 8,
     meetAndGreet: true,
     arabicSpeakingDriver: true,
     childSeat: true,

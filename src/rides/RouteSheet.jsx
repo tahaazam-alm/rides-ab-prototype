@@ -80,7 +80,11 @@ export function RouteSheet({
               key={place.title}
               type="button"
               className="suggestion"
-              onPointerDown={(e) => { e.preventDefault(); commit(place.title) }}
+              /* Use `onClick`, not `onPointerDown`: the browser only fires
+                 `click` after deciding a touch was a tap (not the start of a
+                 scroll), so scrolling the list no longer commits the first
+                 item the finger happens to land on. */
+              onClick={() => commit(place.title)}
             >
               <Icon name="pin" size={24} className="ds-icon suggestion__pin" />
               <span className="suggestion__body">

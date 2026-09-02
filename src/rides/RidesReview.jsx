@@ -79,10 +79,6 @@ export function RidesReview({
   const [dialCode, setDialCode] = useState(DIAL_CODES[0])
   const [phone, setPhone] = useState('')
   const [marketing, setMarketing] = useState(false)
-  // v2 asks for the flight up front so it can set the pickup time from the
-  // landing, and this section asks for the same number for the same reason —
-  // so a tracked flight arrives here already filled in rather than typed twice.
-  const [flightNumber, setFlightNumber] = useState(flight?.number ?? '')
   const [childSeat, setChildSeat] = useState(false)
   const [language, setLanguage] = useState(LANGUAGES[0])
   // Populated by Continue, so the fields stay clean until the traveller asks to
@@ -100,7 +96,7 @@ export function RidesReview({
     if (!/^\d{6,}$/.test(phone.replace(/\s/g, ''))) next.phone = t('rides.review.errPhone')
     setErrors(next)
     if (Object.keys(next).length > 0) return
-    onContinue({ title, firstName, lastName, email, dialCode, phone, marketing, flightNumber, childSeat, language })
+    onContinue({ title, firstName, lastName, email, dialCode, phone, marketing, childSeat, language })
   }
 
   return (
@@ -215,19 +211,6 @@ export function RidesReview({
               <span className="sr-only">{t('rides.review.howWeUseInfo')}</span>
             </button>
           </div>
-        </section>
-
-        <section className="review-section">
-          <SectionHeading
-            title={t('rides.review.flightNumberTitle')}
-            note={t('rides.review.flightNumberNote')}
-          />
-          <TextInput
-            label={t('rides.review.flightNumberPlaceholder')}
-            value={flightNumber}
-            leadingIcon={<Icon name="airplaneTilt" className="ds-icon" />}
-            onChange={(e) => setFlightNumber(e.target.value)}
-          />
         </section>
 
         <section className="review-section">
