@@ -51,10 +51,11 @@ function App() {
   // Only 'en' is wired today; the Landing offers 'ar' behind a Coming-soon
   // gate. The DS provider's `dir` still keys off it so the wiring is ready.
   const [lang, setLang] = useState('en')
-  // Landing defaults to dark to match the iOS-Debug-style reference; the
-  // toggle then persists to every downstream screen because the design
-  // system's tokens flip via `[data-theme='dark']` on the document root.
-  const [theme, setTheme] = useState('dark')
+  // Light is the app's default theme; the reviewer can flip to dark from the
+  // Landing picker and the choice persists to every downstream screen because
+  // the design system's tokens flip via `[data-theme='dark']` on the document
+  // root.
+  const [theme, setTheme] = useState('light')
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
